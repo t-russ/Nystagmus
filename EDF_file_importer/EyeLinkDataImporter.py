@@ -29,6 +29,10 @@ To utilize the code one must first install the EyeLink Developers Kit:https://ww
 import os, sys
 from EDFACCESSwrapper import *
 from EDF2numpy import *
+import logging
+
+logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
+logger = logging.getLogger(__name__)
 
 def readFileWithInputs(inputs):
     errmsg = None
@@ -76,6 +80,7 @@ def readFileWithInputs(inputs):
 
 
 def EDFToNumpy(EDFfilePath, gaze_data_type):
+    logging.info("Passing EDF file path to be read.")
     options = []
     inputs = [EDFfilePath, gaze_data_type]
     # Get EDF filename argument as first arg
@@ -93,11 +98,14 @@ def EDFToNumpy(EDFfilePath, gaze_data_type):
                     options = options + fixed.split(',')
                 inputs = ','.join(options)
                 # Call main function
+                logging.info(f"Reading EDF file with path: {EDFfile} and options: {' '.join(inputs)}.")
                 readFileWithInputs([EDFfile, inputs])
             else:
                 # Call main function
+                logging.info(f"Reading EDF file with path: {EDFfile}.")
                 readFileWithInputs([EDFfile])
         else:
+            logging.info(f"EDF File path {EDFfile} not found.")
             raise FileNotFoundError(EDFfile + " does not seem to exist. Please doublecheck the input filename'")
     else:
         raise TypeError('\nWrong file type! Only EyeLink Data Files are allowed as input file type') 

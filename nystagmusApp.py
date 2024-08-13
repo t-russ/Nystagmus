@@ -1,13 +1,12 @@
+import numpy as np
+import logging
+
 from dash import Dash, html, dcc, Input, Output, callback
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-import numpy as np
-import logging
-import sys
-from EDFTrialParsing import EDFTrialParser
 
-sys.path.insert(1, '\\EDF-File-Importer')
-from EyeLinkDataImporter import EDFToNumpy
+from EDFTrialParsing import EDFTrialParser
+from EDF_file_importer.EyeLinkDataImporter import EDFToNumpy
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
