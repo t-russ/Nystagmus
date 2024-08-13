@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import pandas as pd
 
 #setup logging
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
@@ -87,6 +88,7 @@ class EDFTrialParser:
         except Exception as e:
             logger.error(f"Error in extracting all trials: {str(e)}")
             raise ValueError("Error extracting all trials")
+        
 
 #class to store trial data
 class Trial:
@@ -95,14 +97,15 @@ class Trial:
             logger.error("TrialData must be a list with 5 elements")
             raise ValueError("Invalid Trial Data input into Trial Object")
         
+        #convert np.array to pandas dataframe
         self.trialNumber: int = trialNumber
         self.trialData: list = trialData
-        self.recordingData: np.ndarray = trialData[0]
-        self.messageData: np.ndarray = trialData[1]
-        self.sampleData: np.ndarray = trialData[2]
-        self.eventData: np.ndarray = trialData[3]
-        self.ioEventData: np.ndarray = trialData[4]
-        self.startTime: np.int64 = self.sampleData[0]['time']
+        self.recordingData: pd.DataFrame = pd.DataFrame(trialData[0])
+        self.messageData: pd.DataFrame = pd.DataFrame(trialData[1])
+        self.sampleData: pd.DataFrame = pd.DataFrame(trialData[2])
+        self.eventData: pd.DataFrame = pd.DataFrame(trialData[3])
+        self.ioEventData: pd.DataFrame = pd.DataFrame(trialData[4])
+        self.startTime: np.int64 = self.sampleData['time'].iloc[0]
 
         try:
             self.eyeTracked: str = self.recordingData['eyeTracked'][0]
@@ -116,7 +119,3 @@ class Trial:
         return (f'''Recording Data: {self.recordingData[0]}\nMessage Data: {self.messageData[0]}
         \nSample Data: {self.sampleData[0]}\nEvent Data: {self.eventData[0]}
         \nIO Event Data: {self.ioEventData[0]}\nEye Tracked: {self.eyeTracked} \nStart Time: {self.startTime}''')
-
-        
-
-

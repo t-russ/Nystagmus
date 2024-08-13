@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 #
 # Copyright (c) 2024, SR Research Ltd., All Rights Reserved
 #
@@ -30,7 +30,7 @@ import os, sys
 from EDFACCESSwrapper import *
 from EDF2numpy import *
 
-def main(inputs):
+def readFileWithInputs(inputs):
     errmsg = None
     options = []
     try:
@@ -57,12 +57,9 @@ def main(inputs):
                             + ' records;\n\tMESSAGEdata: ' + str(EDFfileData[2].size) + ' records;\n\tSAMPLEdata: ' + str(EDFfileData[3].size)
                             + ' records;\n\tEVENTdata: ' + str(EDFfileData[4].size) + ' records;\n\tIOEVENTdata: ' + str(EDFfileData[5].size) + ' records')
                         #-----------------------------------------------------
-                        with open(edfFilename.replace('.edf','_whole_file.npy'),'wb') as f:
-                            np.save(f, EDFfileData)
+                        '''with open(edfFilename.replace('.edf','_whole_file.npy'),'wb') as f:
+                            np.save(f, EDFfileData)'''
 
-                        
-                        """with open(edfFilename.replace('.edf','sampledata.npy'),'wb') as f:
-                            np.save(f, EDFfileData[3])"""
                         #-----------------------------------------------------
                     else:
                         errmsg = edfFilename + " does not seem to exist. Please doublecheck the input filename'"
@@ -75,7 +72,40 @@ def main(inputs):
     finally:
         if errmsg != None:
             raise Exception(errmsg) 
-if __name__ == '__main__':
+        
+
+
+def EDFToNumpy(EDFfilePath, gaze_data_type):
+    options = []
+    inputs = [EDFfilePath, gaze_data_type]
+    # Get EDF filename argument as first arg
+    EDFfile = str(inputs[0]).strip()
+    # check that it's actually an EDF file
+    if EDFfile.endswith('.edf')==True or EDFfile.endswith('.EDF')==True:
+        # Check that file actually exists
+        if os.path.isfile(EDFfile):
+            # Check if there are additional arguments
+            if len(inputs)>=2:
+                args = inputs[1:]
+                # if extra args exist, make sure they are in the right format
+                for i in args:
+                    fixed = i.replace('=',':').replace(';',':').replace(' ','')
+                    options = options + fixed.split(',')
+                inputs = ','.join(options)
+                # Call main function
+                readFileWithInputs([EDFfile, inputs])
+            else:
+                # Call main function
+                readFileWithInputs([EDFfile])
+        else:
+            raise FileNotFoundError(EDFfile + " does not seem to exist. Please doublecheck the input filename'")
+    else:
+        raise TypeError('\nWrong file type! Only EyeLink Data Files are allowed as input file type') 
+
+
+
+#shite code
+'''if __name__ == '__main__':
     options = []
     # check for input arguments
     if len(sys.argv)>1:
@@ -96,10 +126,10 @@ if __name__ == '__main__':
                         options = options + fixed.split(',')
                     inputs = ','.join(options)
                     # Call main function
-                    main([EDFfile, inputs])
+                    readFileWithInputs([EDFfile, inputs])
                 else:
                     # Call main function
-                    main([EDFfile])
+                    readFileWithInputs([EDFfile])
             else:
                 raise FileNotFoundError(EDFfile + " does not seem to exist. Please doublecheck the input filename'")
         else:
@@ -141,3 +171,4 @@ if __name__ == '__main__':
             + '\t\toutput_sample_end_enabled:1\t[0=End sample data disabled;\t\t1=End sample Data Enabled]\n'
             + '\t\ttrial_parse_start: "TRIALID"\t[the string used to mark the start of the trial]\n'
             + '\t\ttrial_parse_end:"TRIAL_RESULT"\t[the string used to mark the end of the trial]\n')
+'''
