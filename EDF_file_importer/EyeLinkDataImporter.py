@@ -27,8 +27,7 @@ This code illusrates how to utilize the functions of the EDFACCESSwraper.py to u
 To utilize the code one must first install the EyeLink Developers Kit:https://www.sr-research.com/support/thread-13.html and will also need to install numpy for you python environment: https://numpy.org/install/
 '''
 import os, sys
-from EDFACCESSwrapper import *
-from EDF2numpy import *
+from EDF_file_importer.EDF2numpy import EDF2numpy
 import logging
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')

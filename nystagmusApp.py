@@ -12,7 +12,7 @@ logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asc
 logger = logging.getLogger(__name__)
 
 
-with open("C:\\Users\\tomru\\Documents\\Nystagmus Analyser\\EDF-data\\ad_5mn_whole_file.npy", 'rb') as f:
+with open("C:\\Users\\tomru\\Documents\\Nystagmus Analyser\\EDF_data\\ad_5mn_whole_file.npy", 'rb') as f:
     BREDFfileData = np.load(f, allow_pickle=True)
 
 
@@ -38,14 +38,15 @@ graph_controls = dbc.Card(
                         labelStyle={"padding": 5, "margin-right": 10},
                         inputStyle={"margin-right": 5}),
             ],
-            style= {"margin-bottom": "10px", "margin-top":10, "text-align": "center"},
+            style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
         ),
 
         html.Div([
-                html.Label('Direction'),
-                dcc.Checklist(id='xy-plotted', options=['X', 'Y'], inline=True, 
+                html.Label('Select Direction Tracked:'),
+                dcc.Checklist(id='xy-tracked', options=['X', 'Y'], inline=True, 
                             labelStyle={"padding": 5, "margin-right": 10},
-                            inputStyle={"margin-right": 5}),
+                            inputStyle={"margin-right": 5},
+                            value=['X', 'Y']),
             ],
             style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
         ),
@@ -98,8 +99,9 @@ def updateEyeTracked(inputTrial):
 
 @callback(Output('nystagmus-plot', 'figure'),
         Input('trial-dropdown', 'value'),
-        Input('eye-tracked', 'value'))
-def updateTrialGraph(inputTrial, eyeTracked):
+        Input('eye-tracked', 'value'),
+        Input('xy-tracked', 'value'))
+def updateTrialGraph(inputTrial, eyeTracked, xyTracked):
     logger.debug("Updating Graph")
 
     trialNumber = int(inputTrial.split(" ")[1]) - 1
@@ -109,15 +111,24 @@ def updateTrialGraph(inputTrial, eyeTracked):
     yLeftData = brTrialParser.trials[trialNumber].sampleData['posYLeft']
     timeData = brTrialParser.trials[trialNumber].sampleData['time'] - (brTrialParser.trials[trialNumber].startTime)
 
-    fig = go.FigureWidget()
-    if 'Left' in eyeTracked:
-        fig.add_trace(go.Scatter(x=timeData, y=xLeftData, mode='lines', name='X Left Eye', line = dict(color='#636EFA')))
-        fig.add_trace(go.Scatter(x=timeData, y=yLeftData, mode='lines', name='Y Left Eye', line = dict(color='#EF553B')))
-    if 'Right' in eyeTracked:
-        fig.add_trace(go.Scatter(x=timeData, y=xRightData, mode='lines', name='X Right Eye', line = dict(color='#00CC96')))
-        fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+    logger.info('Plotting new data')
+    try:
+        fig = go.FigureWidget()
 
-    logger.debug("Graph Plotted")
+        if 'Left' in eyeTracked and 'X' in xyTracked:
+            fig.add_trace(go.Scatter(x=timeData, y=xLeftData, mode='lines', name='X Left Eye', line = dict(color='#636EFA')))
+        if 'Left' in eyeTracked and 'Y' in xyTracked:
+            fig.add_trace(go.Scatter(x=timeData, y=yLeftData, mode='lines', name='Y Left Eye', line = dict(color='#EF553B')))
+        if 'Right' in eyeTracked and 'X' in xyTracked:
+            fig.add_trace(go.Scatter(x=timeData, y=xRightData, mode='lines', name='X Right Eye', line = dict(color='#00CC96')))
+        if 'Right' in eyeTracked and 'Y' in xyTracked:
+            fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+
+        logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and f{'/'.join(str(direction) for direction in xyTracked)}")
+
+    except Exception as e:
+        logger.info(f"Error plotting graph with updated filters {str(e)}")
+        raise 
 
     return fig
 

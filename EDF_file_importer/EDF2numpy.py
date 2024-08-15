@@ -29,7 +29,8 @@ To utilize the code one must first install the EyeLink Developers Kit:https://ww
 '''
 
 import os, sys
-from EDFACCESSwrapper import *
+from EDF_file_importer.EDFACCESSwrapper import EDFACCESSwrapper
+import struct
 try:
     import numpy as np
 except ModuleNotFoundError as e:
