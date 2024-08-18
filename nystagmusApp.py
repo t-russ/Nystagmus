@@ -62,9 +62,7 @@ graph_controls = dbc.Card(
 
 upload_button = html.Div([
     dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
-    dbc.Spinner(html.Span(id='upload-message', style={"margin-left": "10px"}),
-                 id='upload-spinner', color="primary", type="border", size="sm"),
-    html.Div(id='upload-output', style={"margin-top": "10px"}),
+    html.Div(id='upload-output', style={"margin-top": "10px" }, ),
 ])
 
 app.layout = dbc.Container(
@@ -72,72 +70,90 @@ app.layout = dbc.Container(
         dcc.Store(id='recording-count', data= 0),
         html.H1("Nystagmus Analyser"),
         html.Hr(),
+        dbc.Row([
         upload_button,
+        ],
+        class_name='h-10',
+        ),
         dbc.Row(
             [
-                dbc.Col(graph_controls, md=2),
-                dbc.Col(dcc.Graph(id = 'nystagmus-plot'), md=10)
+                dbc.Col(graph_controls, md=2, style={"height": "70%"}),
+                dbc.Col(dcc.Graph(id = 'nystagmus-plot', style={'width':'130vh', 'height': '80vh'}), md=10, style={"height": "100%"})
             ],
             align='center',
+            class_name='h-100',
         ),
     ],
-    class_name="h-75",
-    fluid=True,
+    style={"height": "100vh"},
 )
 #------- APP FUNCTIONS/CALLBACKS --------#
-@callback(Output('upload-message', 'children'),
-        Output('upload-spinner', 'spinner_style'),
-        Input('upload-edf', 'loading_state'))
-def updateSpinner(loading_state):
+'''Update the upload button to show a spinner when loading'''
+@callback(Output('upload-edf', 'children'),
+        Input('upload-edf', 'loading_state'),
+        prevent_initial_call=True)
+def updateSpinner(loading_state) -> dbc.Button:
     print(f'Loading state: {loading_state}')
-    if (loading_state is None):
-        return ' ', {'display': 'none'}
 
     if loading_state['is_loading']:
-        time.sleep(2)
-        return "Processing EDF Recording...", {"display": "inline-block"}
+        newButton: dbc.Button = dbc.Button([dbc.Spinner(size = 'sm', spinner_style={'animation-duration':'1s'}), " Loading File..."],
+                            id="upload-edf-button", color="primary", className="mr-2", disabled=True)
+        return newButton
     
     else:
-        return "EDF file uploaded", {"display": "none"}
+        originalButton: dbc.Button = dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2")
+        return originalButton
 
-#Using EDF file data, parse the recording into trials using the EDFTrialParser class
+
+'''Using EDF file data, parse the recording into trials using the EDFTrialParser class'''
 def parseRecordingData(EDFfileData) -> EDFTrialParser:
     try:
-        recordingParser = EDFTrialParser(EDFfileData)
+        recordingParser: EDFTrialParser = EDFTrialParser(EDFfileData)
         recordingParser.extractAllTrials()
-        trialCount = recordingParser.trialCount
+        trialCount: int = recordingParser.trialCount
         logging.info(f"EDF file parsed into {trialCount} trials")
         return recordingParser
 
     except Exception as e:
         logging.error(f"Error parsing EDF file: {str(e)}")
-        return "Error parsing EDF file, please check the logs for more information."
+        raise ValueError(f"Error parsing EDF file: {str(e)}")
     
-#Calls EDF_file_importer module to convert EDF file to numpy array
+
+'''Calls EDF_file_importer module to convert EDF file to numpy array'''
 def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
-    tempFolderPath = Path.cwd() / 'temp'
+    tempFolderPath: Path = Path.cwd() / 'temp'
     try:
-        tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
+        tempFile: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
         tempFilePath = tempFolderPath / tempFile.name
         tempFile.write(decodedContents)
+
         logging.info(f"Temp EDF file created at {str(tempFilePath)}")
-        EDFfileData = EDFToNumpy(tempFilePath, 'gaze_data_type = 0')
+        EDFfileData: np.ndarray = EDFToNumpy(tempFilePath, 'gaze_data_type = 0')
         logging.info("EDF file converted to numpy")
+
         tempFile.close()
         return EDFfileData
 
     except Exception as e:
         logging.error(f"Error creating temp file: {str(e)}")
-        return "Error creating temp file, please check the logs for more information."
+        raise IOError(f"Error creating temp file: {str(e)}")
     
 
+'''Uploads EDF file, converts to numpy array, parses into trials, and stores trials in dcc.Store
+    Triggered on upload button press, returns a message to confirm file upload and parsing'''
 @callback(Output('upload-output', 'children'),
         Input('upload-edf', 'contents'),
         Input('upload-edf', 'filename'),
-        State('recording-count', 'data'))
+        State('recording-count', 'data'),
+        prevent_initial_call=True,
+        running=[
+            Output('upload-edf', 'loading_state'),
+            {'is_loading': True},
+            {'is_loading': False},
+        ]
+    )
 def uploadFile(contents, filename, recordingCount):
     try:
-        filePath, fileExtension = os.path.splitext(filename)
+        fileNameIsolated, fileExtension = os.path.splitext(filename)
 
     except Exception as e:
         logger.error(f"Couldn't extract filename and extension using os.path.splitext: {str(e)}")
@@ -166,19 +182,18 @@ def uploadFile(contents, filename, recordingCount):
 
     return f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
     
-
+'''Updates Eye(s) being shown depending on option selected in checkbox'''
 @callback(Output('eye-tracked', 'value'),
           Input('trial-dropdown', 'value'))
 def updateEyeTracked(inputTrial):
-    trialNumber = int(inputTrial.split(" ")[1]) - 1
+    trialNumber:int = int(inputTrial.split(" ")[1]) - 1
 
-    eyesTracked = [brTrialParser.trials[trialNumber].eyeTracked]
-    if eyesTracked[0] != 'Left' or eyesTracked != 'Right': eyesTracked = ['Left', 'Right']
+    eyesTracked: list = [brTrialParser.trials[trialNumber].eyeTracked]
+    if eyesTracked[0] == 'Binocular': eyesTracked = ['Left', 'Right']
 
     return eyesTracked
 
-
-
+'''Updates graph when value in controls is changed'''
 @callback(Output('nystagmus-plot', 'figure'),
         Input('trial-dropdown', 'value'),
         Input('eye-tracked', 'value'),
@@ -186,7 +201,7 @@ def updateEyeTracked(inputTrial):
 def updateTrialGraph(inputTrial, eyeTracked, xyTracked):
     logger.debug("Updating Graph")
 
-    trialNumber = int(inputTrial.split(" ")[1]) - 1
+    trialNumber: int = int(inputTrial.split(" ")[1]) - 1
     xRightData = brTrialParser.trials[trialNumber].sampleData['posXRight']
     yRightData = brTrialParser.trials[trialNumber].sampleData['posYRight']
     xLeftData = brTrialParser.trials[trialNumber].sampleData['posXLeft']
