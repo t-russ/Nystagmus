@@ -1,7 +1,12 @@
 import numpy as np
 import logging
+import time
+import tempfile
+import os
+import base64
+from pathlib import Path
 
-from dash import Dash, html, dcc, Input, Output, callback
+from dash import Dash, html, dcc, Input, Output, callback, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
@@ -20,6 +25,7 @@ brTrialParser = EDFTrialParser(BREDFfileData)
 brTrialParser.extractAllTrials()
 trialCount = brTrialParser.trialCount
 
+#------- APP LAYOUT --------#
 app = Dash(external_stylesheets=[dbc.themes.COSMO])
 
 graph_controls = dbc.Card(
@@ -54,26 +60,19 @@ graph_controls = dbc.Card(
     body=True,
 )
 
-
-'''app.layout = html.Div([
-
-    html.H2(children = "Nystagmus Analyser",
-            style = {
-                'textAlign': 'center',
-                'color': '#5C5A57'
-            }),
-    html.Div([
-
-    ]),
-
-    dcc.Graph(id = 'nystagmus-plot')
-])'''
-
+upload_button = html.Div([
+    dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
+    dbc.Spinner(html.Span(id='upload-message', style={"margin-left": "10px"}),
+                 id='upload-spinner', color="primary", type="border", size="sm"),
+    html.Div(id='upload-output', style={"margin-top": "10px"}),
+])
 
 app.layout = dbc.Container(
     [
+        dcc.Store(id='recording-count', data= 0),
         html.H1("Nystagmus Analyser"),
         html.Hr(),
+        upload_button,
         dbc.Row(
             [
                 dbc.Col(graph_controls, md=2),
@@ -82,8 +81,91 @@ app.layout = dbc.Container(
             align='center',
         ),
     ],
-    fluid=True
+    class_name="h-75",
+    fluid=True,
 )
+#------- APP FUNCTIONS/CALLBACKS --------#
+@callback(Output('upload-message', 'children'),
+        Output('upload-spinner', 'spinner_style'),
+        Input('upload-edf', 'loading_state'))
+def updateSpinner(loading_state):
+    print(f'Loading state: {loading_state}')
+    if (loading_state is None):
+        return ' ', {'display': 'none'}
+
+    if loading_state['is_loading']:
+        time.sleep(2)
+        return "Processing EDF Recording...", {"display": "inline-block"}
+    
+    else:
+        return "EDF file uploaded", {"display": "none"}
+
+#Using EDF file data, parse the recording into trials using the EDFTrialParser class
+def parseRecordingData(EDFfileData) -> EDFTrialParser:
+    try:
+        recordingParser = EDFTrialParser(EDFfileData)
+        recordingParser.extractAllTrials()
+        trialCount = recordingParser.trialCount
+        logging.info(f"EDF file parsed into {trialCount} trials")
+        return recordingParser
+
+    except Exception as e:
+        logging.error(f"Error parsing EDF file: {str(e)}")
+        return "Error parsing EDF file, please check the logs for more information."
+    
+#Calls EDF_file_importer module to convert EDF file to numpy array
+def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
+    tempFolderPath = Path.cwd() / 'temp'
+    try:
+        tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
+        tempFilePath = tempFolderPath / tempFile.name
+        tempFile.write(decodedContents)
+        logging.info(f"Temp EDF file created at {str(tempFilePath)}")
+        EDFfileData = EDFToNumpy(tempFilePath, 'gaze_data_type = 0')
+        logging.info("EDF file converted to numpy")
+        tempFile.close()
+        return EDFfileData
+
+    except Exception as e:
+        logging.error(f"Error creating temp file: {str(e)}")
+        return "Error creating temp file, please check the logs for more information."
+    
+
+@callback(Output('upload-output', 'children'),
+        Input('upload-edf', 'contents'),
+        Input('upload-edf', 'filename'),
+        State('recording-count', 'data'))
+def uploadFile(contents, filename, recordingCount):
+    try:
+        filePath, fileExtension = os.path.splitext(filename)
+
+    except Exception as e:
+        logger.error(f"Couldn't extract filename and extension using os.path.splitext: {str(e)}")
+        return "Error extracting filename and extension, please check the logs for more information"
+    
+    logging.info(f"Uploading file {filename}")
+    
+    if contents is None:
+        logging.error("No file uploaded/no contents detected.")
+        return "No contents detected in uploaded file."
+    
+    try:
+        contentType, contentString = contents.split(",")
+        decoded = base64.b64decode(contentString)
+        logging.info(f"File {filename} decoded")
+
+    except Exception as e:
+        logging.error(f"Error decoding file: {str(e)}")
+        return "Error decoding file, please check the logs for more information."
+
+    EDFfileData = applyNumpyConversion(decoded, fileExtension)
+    recordingParser = parseRecordingData(EDFfileData)
+    recordingTrials = recordingParser.trials
+    dcc.Store(id= f'recording-{str(recordingCount)}', data=recordingTrials)
+    recordingCount += 1
+
+    return f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
+    
 
 @callback(Output('eye-tracked', 'value'),
           Input('trial-dropdown', 'value'))
@@ -124,7 +206,7 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked):
         if 'Right' in eyeTracked and 'Y' in xyTracked:
             fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
 
-        logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and f{'/'.join(str(direction) for direction in xyTracked)}")
+        logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
 
     except Exception as e:
         logger.info(f"Error plotting graph with updated filters {str(e)}")

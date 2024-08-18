@@ -28,6 +28,8 @@ To utilize the code one must first install the EyeLink Developers Kit:https://ww
 '''
 import os, sys
 from EDF_file_importer.EDF2numpy import EDF2numpy
+#from EDF2numpy import EDF2numpy
+import numpy as np
 import logging
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
@@ -59,10 +61,8 @@ def readFileWithInputs(inputs):
                             + '\tHEADERdata: ' + str(EDFfileData[0].size) + ' records;\n\tRECORDINGdata: ' + str(EDFfileData[1].size) 
                             + ' records;\n\tMESSAGEdata: ' + str(EDFfileData[2].size) + ' records;\n\tSAMPLEdata: ' + str(EDFfileData[3].size)
                             + ' records;\n\tEVENTdata: ' + str(EDFfileData[4].size) + ' records;\n\tIOEVENTdata: ' + str(EDFfileData[5].size) + ' records')
-                        #-----------------------------------------------------
-                        '''with open(edfFilename.replace('.edf','_whole_file.npy'),'wb') as f:
-                            np.save(f, EDFfileData)'''
-
+                        #----------------------------------------------------
+                        return EDFfileData
                         #-----------------------------------------------------
                     else:
                         errmsg = edfFilename + " does not seem to exist. Please doublecheck the input filename'"
@@ -78,10 +78,10 @@ def readFileWithInputs(inputs):
         
 
 
-def EDFToNumpy(EDFfilePath, gaze_data_type):
+def EDFToNumpy(EDFfilePath, gazeDataOptionString) -> np.ndarray:
     logging.info("Passing EDF file path to be read.")
     options = []
-    inputs = [EDFfilePath, gaze_data_type]
+    inputs = [EDFfilePath, gazeDataOptionString]
     # Get EDF filename argument as first arg
     EDFfile = str(inputs[0]).strip()
     # check that it's actually an EDF file
@@ -98,7 +98,8 @@ def EDFToNumpy(EDFfilePath, gaze_data_type):
                 inputs = ','.join(options)
                 # Call main function
                 logging.info(f"Reading EDF file with path: {EDFfile} and options: {' '.join(inputs)}.")
-                readFileWithInputs([EDFfile, inputs])
+                EDFfileData = readFileWithInputs([EDFfile, inputs])
+                return EDFfileData
             else:
                 # Call main function
                 logging.info(f"Reading EDF file with path: {EDFfile}.")
@@ -179,3 +180,6 @@ def EDFToNumpy(EDFfilePath, gaze_data_type):
             + '\t\ttrial_parse_start: "TRIALID"\t[the string used to mark the start of the trial]\n'
             + '\t\ttrial_parse_end:"TRIAL_RESULT"\t[the string used to mark the end of the trial]\n')
 '''
+
+
+#print(type(EDFToNumpy('C:\\Users\\tomru\\AppData\\Local\\Temp\\tmphn42bd8u.edf', 'gaze_data_type=0')))
