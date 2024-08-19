@@ -201,11 +201,13 @@ def uploadFile(contents, filename, recordingList):
 
 '''Updates Eye(s) being shown depending on option selected in checkbox'''
 @callback(Output('eye-tracked', 'value'),
-          Input('trial-dropdown', 'value'))
-def updateEyeTracked(inputTrial):
+          Input('trial-dropdown', 'value'),
+          State('recording-list', 'data'),
+          prevent_initial_call=True)
+def updateEyeTracked(inputTrial, recordingList) -> list:
     trialNumber:int = int(inputTrial.split(" ")[1]) - 1
 
-    eyesTracked: list = [brTrialParser.trials[trialNumber].eyeTracked]
+    eyesTracked: list = [recordingList[trialNumber][1]['eyeTracked']]
     if eyesTracked[0] == 'Binocular': eyesTracked = ['Left', 'Right']
 
     return eyesTracked
@@ -216,18 +218,17 @@ def updateEyeTracked(inputTrial):
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
         Input({'type': 'xy-tracked', 'index': MATCH}, 'value')],
         State('recording-list', 'data'),
-        prevent_initial_call=True,
-        suppress_callback_exceptions=True)
+        prevent_initial_call=True)
 def updateTrialGraph(inputTrial, eyeTracked, xyTracked, recordingList) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
-    startTime = recordingList[trialNumber][1]['startTime']
-    xRightData = recordingList[trialNumber][1]['posXRight']
+    startTime = ((recordingList[trialNumber])[1])['startTime']
+    xRightData = (recordingList[trialNumber][1])['posXRight']
     yRightData = recordingList[trialNumber][1]['posYRight']
     xLeftData = recordingList[trialNumber][1]['posXLeft']
     yLeftData = recordingList[trialNumber][1]['posYLeft']
-    timeData = brTrialParser.trials[trialNumber].sampleData['time'] - (brTrialParser.trials[trialNumber].startTime)
+    timeData = recordingList[trialNumber][1]['time'] - startTime
 
     logger.info('Plotting new data')
     try:
