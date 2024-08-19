@@ -1,12 +1,8 @@
 import numpy as np
-import logging
-import time
-import tempfile
-import os
-import base64
+import logging, time, os, base64, tempfile, copy
 from pathlib import Path
 
-from dash import Dash, html, dcc, Input, Output, callback, State
+from dash import Dash, html, dcc, Input, Output, callback, State, callback_context, MATCH
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
@@ -25,49 +21,69 @@ brTrialParser = EDFTrialParser(BREDFfileData)
 brTrialParser.extractAllTrials()
 trialCount = brTrialParser.trialCount
 
+
 #------- APP LAYOUT --------#
 app = Dash(external_stylesheets=[dbc.themes.COSMO])
 
-graph_controls = dbc.Card(
-    [
-        html.Div([
-            html.Label('Select Trial:'),
-            dcc.Dropdown(id='trial-dropdown', options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",
-                        clearable= False),
-            ],
-            style= {"margin-bottom": "10px"},
-        ),
+def createGraphControls(recordingIndex, trialCount):
 
-        html.Div([
-            html.Label('Select Eye Tracked:'),
-            dcc.Checklist(id='eye-tracked', options=['Left', 'Right'],inline=True, 
-                        labelStyle={"padding": 5, "margin-right": 10},
-                        inputStyle={"margin-right": 5}),
-            ],
-            style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
-        ),
+    new_graph_controls = dbc.Card(
+        [
+            html.Div([
+                html.Label('Trial:'),
+                dcc.Dropdown(id={'type':'trial-dropdown', 'index': recordingIndex}, options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",
+                            clearable= False),
+                ],
+                style= {"margin-bottom": "10px"},
+            ),
 
-        html.Div([
-                html.Label('Select Direction Tracked:'),
-                dcc.Checklist(id='xy-tracked', options=['X', 'Y'], inline=True, 
+            html.Div([
+                html.Label('Eye Tracked:'),
+                dcc.Checklist(id ={'type':'eye-tracked', 'index': recordingIndex}, options=['Left', 'Right'],inline=True, 
                             labelStyle={"padding": 5, "margin-right": 10},
-                            inputStyle={"margin-right": 5},
-                            value=['X', 'Y']),
-            ],
-            style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
-        ),
-    ],
-    body=True,
-)
+                            inputStyle={"margin-right": 5}),
+                ],
+                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
+            ),
+
+            html.Div([
+                    html.Label('Direction Tracked:'),
+                    dcc.Checklist(id={'type': 'xy-tracked', 'index': recordingIndex}, options=['X', 'Y'], inline=True, 
+                                labelStyle={"padding": 5, "margin-right": 10},
+                                inputStyle={"margin-right": 5},
+                                value=['X', 'Y']),
+                ],
+                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
+            ),
+        ],
+        body=True,
+    )
+
+    return new_graph_controls
 
 upload_button = html.Div([
     dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
     html.Div(id='upload-output', style={"margin-top": "10px" }, ),
 ])
 
+
+tabs = dbc.Tabs(
+    [
+        dbc.Tab(label="No Data Uploaded", tab_id="empty-tab",
+                children=[dbc.Card(dbc.CardBody([
+                        html.H5("No data has been uploaded. Please upload a file."),
+                        html.P("Once a file has been uploaded, it will appear here.")]
+                        ))
+                    ],
+                ),
+    ],
+    id="tabs",
+    active_tab="empty-tab",
+)
+
 app.layout = dbc.Container(
     [
-        dcc.Store(id='recording-count', data= 0),
+        dcc.Store(id='recording-list', data=[]),
         html.H1("Nystagmus Analyser"),
         html.Hr(),
         dbc.Row([
@@ -75,17 +91,14 @@ app.layout = dbc.Container(
         ],
         class_name='h-10',
         ),
-        dbc.Row(
-            [
-                dbc.Col(graph_controls, md=2, style={"height": "70%"}),
-                dbc.Col(dcc.Graph(id = 'nystagmus-plot', style={'width':'130vh', 'height': '80vh'}), md=10, style={"height": "100%"})
-            ],
-            align='center',
-            class_name='h-100',
-        ),
+        dbc.Row([
+            tabs,
+        ]),
     ],
     style={"height": "100vh"},
 )
+
+
 #------- APP FUNCTIONS/CALLBACKS --------#
 '''Update the upload button to show a spinner when loading'''
 @callback(Output('upload-edf', 'children'),
@@ -141,9 +154,10 @@ def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
 '''Uploads EDF file, converts to numpy array, parses into trials, and stores trials in dcc.Store
     Triggered on upload button press, returns a message to confirm file upload and parsing'''
 @callback(Output('upload-output', 'children'),
-        Input('upload-edf', 'contents'),
-        Input('upload-edf', 'filename'),
-        State('recording-count', 'data'),
+        Output('recording-list', 'data'),
+        [Input('upload-edf', 'contents'),
+        Input('upload-edf', 'filename')],
+        [State('recording-list', 'data')],
         prevent_initial_call=True,
         running=[
             Output('upload-edf', 'loading_state'),
@@ -151,7 +165,7 @@ def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
             {'is_loading': False},
         ]
     )
-def uploadFile(contents, filename, recordingCount):
+def uploadFile(contents, filename, recordingList):
     try:
         fileNameIsolated, fileExtension = os.path.splitext(filename)
 
@@ -177,11 +191,14 @@ def uploadFile(contents, filename, recordingCount):
     EDFfileData = applyNumpyConversion(decoded, fileExtension)
     recordingParser = parseRecordingData(EDFfileData)
     recordingTrials = recordingParser.trials
-    dcc.Store(id= f'recording-{str(recordingCount)}', data=recordingTrials)
-    recordingCount += 1
+    trialsAsDict = [trial.toDict() for trial in recordingTrials]
+    filenameAndTrials = [fileNameIsolated, trialsAsDict]
+    recordingList.append(filenameAndTrials)
+    outputMessage = f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
 
-    return f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
+    return outputMessage, recordingList
     
+
 '''Updates Eye(s) being shown depending on option selected in checkbox'''
 @callback(Output('eye-tracked', 'value'),
           Input('trial-dropdown', 'value'))
@@ -194,18 +211,22 @@ def updateEyeTracked(inputTrial):
     return eyesTracked
 
 '''Updates graph when value in controls is changed'''
-@callback(Output('nystagmus-plot', 'figure'),
-        Input('trial-dropdown', 'value'),
-        Input('eye-tracked', 'value'),
-        Input('xy-tracked', 'value'))
-def updateTrialGraph(inputTrial, eyeTracked, xyTracked):
+@callback(Output({'type': 'nystagmus-plot', 'index':MATCH}, 'figure'),
+        [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
+        Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
+        Input({'type': 'xy-tracked', 'index': MATCH}, 'value')],
+        State('recording-list', 'data'),
+        prevent_initial_call=True,
+        suppress_callback_exceptions=True)
+def updateTrialGraph(inputTrial, eyeTracked, xyTracked, recordingList) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
-    xRightData = brTrialParser.trials[trialNumber].sampleData['posXRight']
-    yRightData = brTrialParser.trials[trialNumber].sampleData['posYRight']
-    xLeftData = brTrialParser.trials[trialNumber].sampleData['posXLeft']
-    yLeftData = brTrialParser.trials[trialNumber].sampleData['posYLeft']
+    startTime = recordingList[trialNumber][1]['startTime']
+    xRightData = recordingList[trialNumber][1]['posXRight']
+    yRightData = recordingList[trialNumber][1]['posYRight']
+    xLeftData = recordingList[trialNumber][1]['posXLeft']
+    yLeftData = recordingList[trialNumber][1]['posYLeft']
     timeData = brTrialParser.trials[trialNumber].sampleData['time'] - (brTrialParser.trials[trialNumber].startTime)
 
     logger.info('Plotting new data')
@@ -228,6 +249,39 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked):
         raise 
 
     return fig
+
+@callback(Output('tabs', 'children'),
+        [Input('recording-list', 'data')],
+        [State('tabs', 'children')],
+        prevent_initial_call=True)    
+def createNewTab(recordingList, currentTabs) -> dbc.Tabs:
+    recordingCount:int = len(recordingList)
+    if recordingCount == 0:
+        return currentTabs
+    
+    newTabs = copy.copy(currentTabs)
+    newRecordingIndex:int = recordingCount - 1
+    trialCount:int = len(recordingList[newRecordingIndex][1])
+    newGraphControls = createGraphControls(newRecordingIndex, trialCount)
+
+    newTab = dbc.Tab(label=recordingList[newRecordingIndex][0], tab_id=f"recording-{newRecordingIndex}",
+                    children=[dbc.Row(
+                            [
+                            dbc.Col(newGraphControls, md=2, style={"height": "90%"}), 
+                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'130vh', 'height': '80vh'}),
+                                     md=10, style={"height": "100%"}),
+                            ],
+                            align='center',
+                            class_name='h-100'),
+                        ]   
+                    )
+    
+    if recordingCount ==1:
+        return [newTab]
+    else:
+        newTabs.append(newTab)
+        return newTabs
+
 
 
 if __name__ == '__main__':

@@ -119,3 +119,13 @@ class Trial:
         return (f'''Recording Data: {self.recordingData[0]}\nMessage Data: {self.messageData[0]}
         \nSample Data: {self.sampleData[0]}\nEvent Data: {self.eventData[0]}
         \nIO Event Data: {self.ioEventData[0]}\nEye Tracked: {self.eyeTracked} \nStart Time: {self.startTime}''')
+    
+    def toDict(self):
+        return {'trialNumber': self.trialNumber,
+                'recordingData': self.recordingData.to_dict('records'), 
+                'messageData': self.messageData.to_dict('records'), 
+                'sampleData': self.sampleData.to_dict('records'), 
+                'eventData': self.eventData.to_dict('records'), 
+                'ioEventData': self.ioEventData.to_dict('records'), 
+                'eyeTracked': self.eyeTracked, 
+                'startTime': self.startTime}
