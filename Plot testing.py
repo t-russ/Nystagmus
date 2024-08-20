@@ -1,6 +1,4 @@
 import plotly.graph_objects as go
-import ipywidgets as widgets
-from ipywidgets import interact, interact_manual
 import numpy as np
 import logging
 
