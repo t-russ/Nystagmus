@@ -1,5 +1,5 @@
 import numpy as np
-import logging, time, os, base64, tempfile, copy
+import logging, time, os, base64, tempfile, copy, json
 from pathlib import Path
 
 from dash import Dash, html, dcc, Input, Output, callback, State, callback_context, MATCH
@@ -13,13 +13,7 @@ logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asc
 logger = logging.getLogger(__name__)
 
 
-with open("C:\\Users\\tomru\\Documents\\Nystagmus Analyser\\EDF_data\\ad_5mn_whole_file.npy", 'rb') as f:
-    BREDFfileData = np.load(f, allow_pickle=True)
-
-
-brTrialParser = EDFTrialParser(BREDFfileData)
-brTrialParser.extractAllTrials()
-trialCount = brTrialParser.trialCount
+recordingList = []
 
 
 #------- APP LAYOUT --------#
@@ -83,7 +77,7 @@ tabs = dbc.Tabs(
 
 app.layout = dbc.Container(
     [
-        dcc.Store(id='recording-list', data=[]),
+        dcc.Store(id='upload-trigger', data=0),
         html.H1("Nystagmus Analyser"),
         html.Hr(),
         dbc.Row([
@@ -154,10 +148,10 @@ def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
 '''Uploads EDF file, converts to numpy array, parses into trials, and stores trials in dcc.Store
     Triggered on upload button press, returns a message to confirm file upload and parsing'''
 @callback(Output('upload-output', 'children'),
-        Output('recording-list', 'data'),
+          Output('upload-trigger', 'data'),
         [Input('upload-edf', 'contents'),
         Input('upload-edf', 'filename')],
-        [State('recording-list', 'data')],
+        State('upload-trigger', 'data'),
         prevent_initial_call=True,
         running=[
             Output('upload-edf', 'loading_state'),
@@ -165,13 +159,13 @@ def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
             {'is_loading': False},
         ]
     )
-def uploadFile(contents, filename, recordingList):
+def uploadFile(contents, filename, uploadTrigger) -> str:
     try:
         fileNameIsolated, fileExtension = os.path.splitext(filename)
 
     except Exception as e:
         logger.error(f"Couldn't extract filename and extension using os.path.splitext: {str(e)}")
-        return "Error extracting filename and extension, please check the logs for more information"
+        return "Error extracting filename and extension, please check the logs for more information", uploadTrigger
     
     logging.info(f"Uploading file {filename}")
     
@@ -186,28 +180,34 @@ def uploadFile(contents, filename, recordingList):
 
     except Exception as e:
         logging.error(f"Error decoding file: {str(e)}")
-        return "Error decoding file, please check the logs for more information."
+        return "Error decoding file, please check the logs for more information.", uploadTrigger
 
     EDFfileData = applyNumpyConversion(decoded, fileExtension)
     recordingParser = parseRecordingData(EDFfileData)
     recordingTrials = recordingParser.trials
-    trialsAsDict = [trial.toDict() for trial in recordingTrials]
-    filenameAndTrials = [fileNameIsolated, trialsAsDict]
+    filenameAndTrials = [fileNameIsolated, recordingTrials]
     recordingList.append(filenameAndTrials)
     outputMessage = f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
+    uploadTrigger += 1
 
-    return outputMessage, recordingList
+    return outputMessage, uploadTrigger
     
 
 '''Updates Eye(s) being shown depending on option selected in checkbox'''
-@callback(Output('eye-tracked', 'value'),
-          Input('trial-dropdown', 'value'),
-          State('recording-list', 'data'),
-          prevent_initial_call=True)
-def updateEyeTracked(inputTrial, recordingList) -> list:
+@callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
+          Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
+          Input('tabs', 'active_tab'),
+          suppress_callback_exceptions=True)
+def updateEyeTracked(inputTrial, activeTab) -> list:
+    recordingIndex = int(activeTab.split('-')[1]) - 1
     trialNumber:int = int(inputTrial.split(" ")[1]) - 1
+    ''' triggeredID = callback_context.triggered[0]['prop_id'].split('.')[0]
+    recordingIndex = json.loads(triggeredID)['index']'''
 
-    eyesTracked: list = [recordingList[trialNumber][1]['eyeTracked']]
+    relevantTrial = (recordingList[recordingIndex][1])[trialNumber]
+
+    eyesTracked: list = [relevantTrial.eyeTracked]
+    print(eyesTracked)
     if eyesTracked[0] == 'Binocular': eyesTracked = ['Left', 'Right']
 
     return eyesTracked
@@ -216,19 +216,23 @@ def updateEyeTracked(inputTrial, recordingList) -> list:
 @callback(Output({'type': 'nystagmus-plot', 'index':MATCH}, 'figure'),
         [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
-        Input({'type': 'xy-tracked', 'index': MATCH}, 'value')],
-        State('recording-list', 'data'),
-        prevent_initial_call=True)
-def updateTrialGraph(inputTrial, eyeTracked, xyTracked, recordingList) -> go.FigureWidget:
+        Input({'type': 'xy-tracked', 'index': MATCH}, 'value')])
+def updateTrialGraph(inputTrial, eyeTracked, xyTracked) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
+    triggeredID = callback_context.triggered[0]['prop_id'].split('.')[0]
+    recordingIndex = eval(triggeredID)['index']
+    print(recordingIndex)
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
-    startTime = ((recordingList[trialNumber])[1])['startTime']
-    xRightData = (recordingList[trialNumber][1])['posXRight']
-    yRightData = recordingList[trialNumber][1]['posYRight']
-    xLeftData = recordingList[trialNumber][1]['posXLeft']
-    yLeftData = recordingList[trialNumber][1]['posYLeft']
-    timeData = recordingList[trialNumber][1]['time'] - startTime
+
+    startTime = (recordingList[recordingIndex][1])[trialNumber].startTime
+    relevantSampleData = (recordingList[recordingIndex][1])[trialNumber].sampleData
+
+    xRightData = relevantSampleData['posXRight']
+    yRightData = relevantSampleData['posYRight']
+    xLeftData = relevantSampleData['posXLeft']
+    yLeftData = relevantSampleData['posYLeft']
+    timeData = relevantSampleData['time'] - startTime
 
     logger.info('Plotting new data')
     try:
@@ -251,19 +255,23 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked, recordingList) -> go.Fig
 
     return fig
 
+'''Creates new tab for a file being uploaded'''
 @callback(Output('tabs', 'children'),
-        [Input('recording-list', 'data')],
+          Output('tabs', 'active_tab'),
+          Input('upload-trigger', 'data'),
         [State('tabs', 'children')],
         prevent_initial_call=True)    
-def createNewTab(recordingList, currentTabs) -> dbc.Tabs:
+def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     recordingCount:int = len(recordingList)
     if recordingCount == 0:
-        return currentTabs
+        return currentTabs, "empty-tab"
     
     newTabs = copy.copy(currentTabs)
     newRecordingIndex:int = recordingCount - 1
     trialCount:int = len(recordingList[newRecordingIndex][1])
+    print(f'new Trial Count: {trialCount}')
     newGraphControls = createGraphControls(newRecordingIndex, trialCount)
+    newTabID = f"recording-{newRecordingIndex}"
 
     newTab = dbc.Tab(label=recordingList[newRecordingIndex][0], tab_id=f"recording-{newRecordingIndex}",
                     children=[dbc.Row(
@@ -278,10 +286,10 @@ def createNewTab(recordingList, currentTabs) -> dbc.Tabs:
                     )
     
     if recordingCount ==1:
-        return [newTab]
+        return [newTab], newTabID
     else:
         newTabs.append(newTab)
-        return newTabs
+        return newTabs, newTabID
 
 
 
