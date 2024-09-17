@@ -126,7 +126,7 @@ def parseRecordingData(EDFfileData) -> EDFTrialParser:
     
 
 '''Calls EDF_file_importer module to convert EDF file to numpy array'''
-def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
+def applyNumpyConversion(decodedContents, fileExtension) -> tuple[np.ndarray, Path]:
     tempFolderPath: Path = Path.cwd() / 'temp'
     try:
         tempFile: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
@@ -138,7 +138,8 @@ def applyNumpyConversion(decodedContents, fileExtension) -> np.ndarray:
         logging.info("EDF file converted to numpy")
 
         tempFile.close()
-        return EDFfileData
+
+        return EDFfileData, tempFilePath
 
     except Exception as e:
         logging.error(f"Error creating temp file: {str(e)}")
@@ -182,13 +183,14 @@ def uploadFile(contents, filename, uploadTrigger) -> str:
         logging.error(f"Error decoding file: {str(e)}")
         return "Error decoding file, please check the logs for more information.", uploadTrigger
 
-    EDFfileData = applyNumpyConversion(decoded, fileExtension)
+    EDFfileData, tempFilePath = applyNumpyConversion(decoded, fileExtension)
     recordingParser = parseRecordingData(EDFfileData)
     recordingTrials = recordingParser.trials
     filenameAndTrials = [fileNameIsolated, recordingTrials]
     recordingList.append(filenameAndTrials)
     outputMessage = f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
     uploadTrigger += 1
+    #os.remove(tempFilePath)
 
     return outputMessage, uploadTrigger
     
@@ -207,7 +209,6 @@ def updateEyeTracked(inputTrial, activeTab) -> list:
     relevantTrial = (recordingList[recordingIndex][1])[trialNumber]
 
     eyesTracked: list = [relevantTrial.eyeTracked]
-    print(eyesTracked)
     if eyesTracked[0] == 'Binocular': eyesTracked = ['Left', 'Right']
 
     return eyesTracked
@@ -222,11 +223,17 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked) -> go.FigureWidget:
 
     triggeredID = callback_context.triggered[0]['prop_id'].split('.')[0]
     recordingIndex = eval(triggeredID)['index']
-    print(recordingIndex)
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
+    
+    try:
+        relevantTrial = (recordingList[recordingIndex][1])[trialNumber]
 
-    startTime = (recordingList[recordingIndex][1])[trialNumber].startTime
-    relevantSampleData = (recordingList[recordingIndex][1])[trialNumber].sampleData
+    except Exception as e:
+        logger.error(f"Trial Index not found in file: {str(e)}")
+        raise IndexError("Trial indedx not found in file")
+
+    startTime = relevantTrial.startTime
+    relevantSampleData = relevantTrial.sampleData
 
     xRightData = relevantSampleData['posXRight']
     yRightData = relevantSampleData['posYRight']
@@ -277,12 +284,12 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
                     children=[dbc.Row(
                             [
                             dbc.Col(newGraphControls, md=2, style={"height": "90%"}), 
-                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'130vh', 'height': '80vh'}),
+                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'110vh', 'height': '80vh'}),
                                      md=10, style={"height": "100%"}),
                             ],
                             align='center',
                             class_name='h-100'),
-                        ]   
+                        ]
                     )
     
     if recordingCount ==1:

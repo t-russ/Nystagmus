@@ -106,6 +106,9 @@ class Trial:
         self.eventData: pd.DataFrame = pd.DataFrame(trialData[3])
         self.ioEventData: pd.DataFrame = pd.DataFrame(trialData[4])
         self.startTime: np.int64 = self.sampleData['time'].iloc[0]
+        
+        #remove -32768 values from sample data (missing data)
+        self.sampleData.replace(-32768, np.nan, inplace=True)
 
         try:
             self.eyeTracked: str = self.recordingData['eyeTracked'][0]

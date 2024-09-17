@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import numpy as np
 import logging
+import pandas as pd
 
 from EDFTrialParsing import EDFTrialParser
 
@@ -8,12 +9,15 @@ logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asc
 logger = logging.getLogger(__name__)
 
 
-with open("C:\\Users\\tomru\Documents\\Sam Interning\\ad_5mn_whole_file.npy", 'rb') as f:
+with open("C:\\Users\\tomru\\Documents\\Nystagmus Analyser\\EDF_data\\br_whole_file.npy", 'rb') as f:
     BREDFfileData = np.load(f, allow_pickle=True)
 
 
 brTrialParser = EDFTrialParser(BREDFfileData)
 brTrialParser.extractAllTrials()
+
+sampleData = brTrialParser.trials[1].sampleData
+sampleData.replace(-32768, np.nan, inplace=True)
 
 xRightData = brTrialParser.trials[1].sampleData['posXRight']
 yRightData = brTrialParser.trials[1].sampleData['posYRight']
