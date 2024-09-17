@@ -33,7 +33,7 @@ def createGraphControls(recordingIndex, trialCount):
 
             html.Div([
                 html.Label('Eye Tracked:'),
-                dcc.Checklist(id ={'type':'eye-tracked', 'index': recordingIndex}, options=['Left', 'Right'],inline=True, 
+                dbc.Checklist(id ={'type':'eye-tracked', 'index': recordingIndex}, options=['Left', 'Right'],inline=True, 
                             labelStyle={"padding": 5, "margin-right": 10},
                             inputStyle={"margin-right": 5}),
                 ],
@@ -42,13 +42,35 @@ def createGraphControls(recordingIndex, trialCount):
 
             html.Div([
                     html.Label('Direction Tracked:'),
-                    dcc.Checklist(id={'type': 'xy-tracked', 'index': recordingIndex}, options=['X', 'Y'], inline=True, 
+                    dbc.Checklist(id={'type': 'xy-tracked', 'index': recordingIndex}, options=['X', 'Y'], inline=True, 
                                 labelStyle={"padding": 5, "margin-right": 10},
                                 inputStyle={"margin-right": 5},
                                 value=['X', 'Y']),
                 ],
                 style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
             ),
+
+            html.Div([
+                dbc.Checklist(id={'type': 'remapping-check', 'index': recordingIndex}, options=['Enable Remapping'], inline=True,
+                            labelStyle={"padding": 5, "margin-right": 10},
+                            inputStyle={"margin-right": 5}),
+                    ],
+                    style= {"margin-bottom": 10, "text-align": "center"}
+            ),
+
+            html.Div([
+                html.Label('+10º'),
+                dbc.Input(id={'type': 'remapping-plus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
+                    ],
+                    style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
+            ),
+
+            html.Div([
+                html.Label('-10º'),
+                dbc.Input(id={'type': 'remapping-minus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
+                    ],
+                    style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
+            )
         ],
         body=True,
     )
@@ -254,6 +276,8 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked) -> go.FigureWidget:
         if 'Right' in eyeTracked and 'Y' in xyTracked:
             fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
 
+        
+
         logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
 
     except Exception as e:
@@ -283,9 +307,10 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     newTab = dbc.Tab(label=recordingList[newRecordingIndex][0], tab_id=f"recording-{newRecordingIndex}",
                     children=[dbc.Row(
                             [
-                            dbc.Col(newGraphControls, md=2, style={"height": "90%"}), 
-                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'110vh', 'height': '80vh'}),
-                                     md=10, style={"height": "100%"}),
+                            dbc.Col(newGraphControls, width=3, style={"height": "100%"}), 
+                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'110vh', 'height': '80vh'},
+                                              config={'edits': {'shapePosition': True}, 'displaylogo': False}),
+                                    width=9, style={"height": "100%"}),
                             ],
                             align='center',
                             class_name='h-100'),
