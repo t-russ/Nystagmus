@@ -2,12 +2,14 @@ import numpy as np
 import logging, time, os, base64, tempfile, copy, json, webbrowser
 from pathlib import Path
 
-from dash import Dash, html, dcc, Input, Output, callback, State, callback_context, MATCH
+from dash import dcc, Input, Output, callback, State, callback_context, MATCH
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
 from EDFTrialParsing import EDFTrialParser
 from EDF_file_importer.EyeLinkDataImporter import EDFToNumpy
+
+from appLayout import createGraphControls, app
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
@@ -15,107 +17,9 @@ logger = logging.getLogger(__name__)
 
 recordingList = []
 
+#----------------- APP FUNCTIONS/CALLBACKS ------------------#
 
-#------- APP LAYOUT --------#
-app = Dash(external_stylesheets=[dbc.themes.COSMO])
-
-def createGraphControls(recordingIndex, trialCount):
-
-    new_graph_controls = dbc.Card(
-        [
-            html.Div([
-                html.Label('Trial:'),
-                dcc.Dropdown(id={'type':'trial-dropdown', 'index': recordingIndex}, options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",
-                            clearable= False),
-                ],
-                style= {"margin-bottom": "10px"},
-            ),
-
-            html.Div([
-                html.Label('Eye Tracked:'),
-                dbc.Checklist(id ={'type':'eye-tracked', 'index': recordingIndex}, options=['Left', 'Right'],inline=True, 
-                            labelStyle={"margin-right": 10},
-                            inputStyle={"margin-right": 5}),
-                ],
-                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
-            ),
-
-            html.Div([
-                    html.Label('Direction Tracked:'),
-                    dbc.Checklist(id={'type': 'xy-tracked', 'index': recordingIndex}, options=['X', 'Y'], inline=True, 
-                                labelStyle={"margin-right": 10},
-                                inputStyle={"margin-right": 5},
-                                value=['X', 'Y']),
-                ],
-                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
-            ),
-
-            html.Div([
-                dbc.Checklist(id={'type': 'remapping-check', 'index': recordingIndex}, options=['Enable Remapping'], inline=True,
-                            labelStyle={"margin-right": 10},
-                            inputStyle={"margin-right": 5}),
-                    ],
-                    style= {"margin-bottom": 10, "text-align": "center"}
-            ),
-
-            html.Div([
-                html.Label('+10º'),
-                dbc.Input(id={'type': 'remapping-plus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
-                    ],
-                    style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
-            ),
-
-            html.Div([
-                html.Label('-10º'),
-                dbc.Input(id={'type': 'remapping-minus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
-                    ],
-                    style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
-            )
-        ],
-        body=True,
-    )
-
-    return new_graph_controls
-
-upload_button = html.Div([
-    dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
-    html.Div(id='upload-output', style={"margin-top": "10px" }, ),
-])
-
-
-tabs = dbc.Tabs(
-    [
-        dbc.Tab(label="No Data Uploaded", tab_id="empty-tab",
-                children=[dbc.Card(dbc.CardBody([
-                        html.H5("No data has been uploaded. Please upload a file."),
-                        html.P("Once a file has been uploaded, it will appear here.")]
-                        ))
-                    ],
-                ),
-    ],
-    id="tabs",
-    active_tab="empty-tab",
-)
-
-app.layout = dbc.Container(
-    [
-        dcc.Store(id='upload-trigger', data=0),
-        html.H1("Nystagmus Analyser"),
-        html.Hr(),
-        dbc.Row([
-        upload_button,
-        ],
-        class_name='h-10',
-        ),
-        dbc.Row([
-            tabs,
-        ]),
-    ],
-    style={"height": "100vh"},
-)
-
-
-#------- APP FUNCTIONS/CALLBACKS --------#
+#------- Uploading EDF File and Parsing --------#
 '''Update the upload button to show a spinner when loading'''
 @callback(Output('upload-edf', 'children'),
         Input('upload-edf', 'loading_state'),
@@ -133,19 +37,7 @@ def updateSpinner(loading_state) -> dbc.Button:
         return originalButton
 
 
-'''Using EDF file data, parse the recording into trials using the EDFTrialParser class'''
-def parseRecordingData(EDFfileData) -> EDFTrialParser:
-    try:
-        recordingParser: EDFTrialParser = EDFTrialParser(EDFfileData)
-        recordingParser.extractAllTrials()
-        trialCount: int = recordingParser.trialCount
-        logging.info(f"EDF file parsed into {trialCount} trials")
-        return recordingParser
 
-    except Exception as e:
-        logging.error(f"Error parsing EDF file: {str(e)}")
-        raise ValueError(f"Error parsing EDF file: {str(e)}")
-    
 
 '''Calls EDF_file_importer module to convert EDF file to numpy array'''
 def applyNumpyConversion(decodedContents, fileExtension) -> tuple[np.ndarray, Path]:
@@ -166,6 +58,19 @@ def applyNumpyConversion(decodedContents, fileExtension) -> tuple[np.ndarray, Pa
     except Exception as e:
         logging.error(f"Error creating temp file: {str(e)}")
         raise IOError(f"Error creating temp file: {str(e)}")
+    
+'''Using EDF file data, parse the recording into trials using the EDFTrialParser class'''
+def parseRecordingData(EDFfileData) -> EDFTrialParser:
+    try:
+        recordingParser: EDFTrialParser = EDFTrialParser(EDFfileData)
+        recordingParser.extractAllTrials()
+        trialCount: int = recordingParser.trialCount
+        logging.info(f"EDF file parsed into {trialCount} trials")
+        return recordingParser
+
+    except Exception as e:
+        logging.error(f"Error parsing EDF file: {str(e)}")
+        raise ValueError(f"Error parsing EDF file: {str(e)}")
     
 
 '''Uploads EDF file, converts to numpy array, parses into trials, and stores trials in dcc.Store
@@ -215,8 +120,11 @@ def uploadFile(contents, filename, uploadTrigger) -> str:
     #os.remove(tempFilePath)
 
     return outputMessage, uploadTrigger
-    
 
+
+
+
+#------- GRAPH/ GRAPH CONTROLS UPDATING --------#
 '''Updates Eye(s) being shown depending on option selected in checkbox'''
 @callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
           Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
@@ -294,6 +202,7 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureW
 
     return fig
 
+#------- TAB CREATION --------#
 '''Creates new tab for a file being uploaded'''
 @callback(Output('tabs', 'children'),
           Output('tabs', 'active_tab'),
@@ -330,26 +239,11 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     else:
         newTabs.append(newTab)
         return newTabs, newTabID
-    
-'''@callback(Output({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
-          Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
-          State({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
-          prevent_initial_call=True)
-def enableRemappingLines(remappingCheck, currentFigure) -> go.FigureWidget:
-    if remappingCheck:
-        currentFigure.add_hline(y=-2000, line_dash='dash', line_color='black', 
-                                label=dict(text='+10º', textposition='top center', font=dict(size=12)), 
-                                opacity=0.7, line_width=0.9)
-        
-        currentFigure.add_hline(y=-6000, line_dash='dash', line_color='black', 
-                                label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
-                                opacity=0.7, line_width=0.9)
-        
-        return currentFigure
-    
-    else:
-        return currentFigure'''
-    
+
+
+
+
+#------- REMAPPING CONTROLS/LINES --------#
 @callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'disabled'),
           Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'disabled'),
           Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
@@ -361,24 +255,37 @@ def enableRemappingInput(remappingCheck) -> tuple:
     else:
         return True, True
 
-@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'value'),
-          Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'value'),
+@callback(Output({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
+          Output({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
           Input({'type': 'nystagmus-plot', 'index': MATCH}, 'relayoutData'),
+          State({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
+          State({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
           prevent_initial_call=True)
-def updateRemapLineValue(relayoutData):
+def updateRemapLineValue(relayoutData, plus10Value, minus10Value) -> tuple:
     print(relayoutData)
     if 'shapes[1].y1' in relayoutData.keys():
-        plus10NewValue = relayoutData['shapes[1].y1']
-    if 'shapes[0].y1' in relayoutData.keys():
-        minus10NewValue = relayoutData['shapes[0].y1']
+        plus10Value = round(relayoutData['shapes[1].y1'])
 
         
-    val = relayoutData[0]
-    return val
+    if 'shapes[0].y1' in relayoutData.keys():
+        minus10Value = round(relayoutData['shapes[0].y1'])
 
+    return plus10Value, minus10Value
+
+@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'value'),
+            Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'value'),
+            Input({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
+            Input({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
+            prevent_initial_call=True)
+def updateRemapInput(plus10Value, minus10Value) -> tuple:
+    return plus10Value, minus10Value
+
+
+#------- MAIN FUNCTION --------#
+'''Launches Dash app'''
 if __name__ == '__main__':
     port = 8050
-    #webbrowser.open_new(f'http://127.0.0.1:{port}')
-    #app.run(debug=True, port=port, use_reloader=False)
-    app.run(debug=True, port=port)
+    webbrowser.open_new(f'http://127.0.0.1:{port}')
+    app.run(debug=True, port=port, use_reloader=False)
+    #app.run(debug=True, port=port)
 
