@@ -1,5 +1,5 @@
 import numpy as np
-import logging, time, os, base64, tempfile, copy, json
+import logging, time, os, base64, tempfile, copy, json, webbrowser
 from pathlib import Path
 
 from dash import Dash, html, dcc, Input, Output, callback, State, callback_context, MATCH
@@ -34,7 +34,7 @@ def createGraphControls(recordingIndex, trialCount):
             html.Div([
                 html.Label('Eye Tracked:'),
                 dbc.Checklist(id ={'type':'eye-tracked', 'index': recordingIndex}, options=['Left', 'Right'],inline=True, 
-                            labelStyle={"padding": 5, "margin-right": 10},
+                            labelStyle={"margin-right": 10},
                             inputStyle={"margin-right": 5}),
                 ],
                 style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
@@ -43,7 +43,7 @@ def createGraphControls(recordingIndex, trialCount):
             html.Div([
                     html.Label('Direction Tracked:'),
                     dbc.Checklist(id={'type': 'xy-tracked', 'index': recordingIndex}, options=['X', 'Y'], inline=True, 
-                                labelStyle={"padding": 5, "margin-right": 10},
+                                labelStyle={"margin-right": 10},
                                 inputStyle={"margin-right": 5},
                                 value=['X', 'Y']),
                 ],
@@ -52,7 +52,7 @@ def createGraphControls(recordingIndex, trialCount):
 
             html.Div([
                 dbc.Checklist(id={'type': 'remapping-check', 'index': recordingIndex}, options=['Enable Remapping'], inline=True,
-                            labelStyle={"padding": 5, "margin-right": 10},
+                            labelStyle={"margin-right": 10},
                             inputStyle={"margin-right": 5}),
                     ],
                     style= {"margin-bottom": 10, "text-align": "center"}
@@ -239,8 +239,9 @@ def updateEyeTracked(inputTrial, activeTab) -> list:
 @callback(Output({'type': 'nystagmus-plot', 'index':MATCH}, 'figure'),
         [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
-        Input({'type': 'xy-tracked', 'index': MATCH}, 'value')])
-def updateTrialGraph(inputTrial, eyeTracked, xyTracked) -> go.FigureWidget:
+        Input({'type': 'xy-tracked', 'index': MATCH}, 'value'),
+        Input({'type': 'remapping-check', 'index': MATCH}, 'value')],)
+def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
     triggeredID = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -276,7 +277,14 @@ def updateTrialGraph(inputTrial, eyeTracked, xyTracked) -> go.FigureWidget:
         if 'Right' in eyeTracked and 'Y' in xyTracked:
             fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
 
-        
+        if remappingCheck:
+            fig.add_hline(y=-6000, line_dash='dash', line_color='black', 
+                                    label=dict(text='+10º', textposition='top center', font=dict(size=12)), 
+                                    opacity=0.7, line_width=0.9)
+            
+            fig.add_hline(y=-2000, line_dash='dash', line_color='black', 
+                                    label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
+                                    opacity=0.7, line_width=0.9)
 
         logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
 
@@ -322,8 +330,55 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     else:
         newTabs.append(newTab)
         return newTabs, newTabID
+    
+'''@callback(Output({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
+          Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
+          State({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
+          prevent_initial_call=True)
+def enableRemappingLines(remappingCheck, currentFigure) -> go.FigureWidget:
+    if remappingCheck:
+        currentFigure.add_hline(y=-2000, line_dash='dash', line_color='black', 
+                                label=dict(text='+10º', textposition='top center', font=dict(size=12)), 
+                                opacity=0.7, line_width=0.9)
+        
+        currentFigure.add_hline(y=-6000, line_dash='dash', line_color='black', 
+                                label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
+                                opacity=0.7, line_width=0.9)
+        
+        return currentFigure
+    
+    else:
+        return currentFigure'''
+    
+@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
+          prevent_initial_call=True)        
+def enableRemappingInput(remappingCheck) -> tuple:
+    if remappingCheck:
+        return False, False
+    
+    else:
+        return True, True
 
+@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'value'),
+          Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'value'),
+          Input({'type': 'nystagmus-plot', 'index': MATCH}, 'relayoutData'),
+          prevent_initial_call=True)
+def updateRemapLineValue(relayoutData):
+    print(relayoutData)
+    if 'shapes[1].y1' in relayoutData.keys():
+        plus10NewValue = relayoutData['shapes[1].y1']
+    if 'shapes[0].y1' in relayoutData.keys():
+        minus10NewValue = relayoutData['shapes[0].y1']
 
+        
+    val = relayoutData[0]
+    return val
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = 8050
+    #webbrowser.open_new(f'http://127.0.0.1:{port}')
+    #app.run(debug=True, port=port, use_reloader=False)
+    app.run(debug=True, port=port)
+
