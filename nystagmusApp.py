@@ -148,8 +148,11 @@ def updateEyeTracked(inputTrial, activeTab) -> list:
         [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
         Input({'type': 'xy-tracked', 'index': MATCH}, 'value'),
-        Input({'type': 'remapping-check', 'index': MATCH}, 'value')],)
-def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureWidget:
+        Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
+        State({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
+        State({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data')
+        ],)
+def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, minus10Value) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
     triggeredID = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -161,7 +164,7 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureW
 
     except Exception as e:
         logger.error(f"Trial Index not found in file: {str(e)}")
-        raise IndexError("Trial indedx not found in file")
+        raise IndexError("Trial index not found in file")
 
     startTime = relevantTrial.startTime
     relevantSampleData = relevantTrial.sampleData
@@ -171,6 +174,7 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureW
     xLeftData = relevantSampleData['posXLeft']
     yLeftData = relevantSampleData['posYLeft']
     timeData = relevantSampleData['time'] - startTime
+    endTime = timeData.iat[-1]
 
     logger.info('Plotting new data')
     try:
@@ -184,16 +188,14 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureW
             fig.add_trace(go.Scatter(x=timeData, y=xRightData, mode='lines', name='X Right Eye', line = dict(color='#00CC96')))
         if 'Right' in eyeTracked and 'Y' in xyTracked:
             fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+        lines = []
+        if remappingCheck and 'X' in xyTracked:
+            lines += (updateRemapLine(plus10Value, minus10Value, 'X', endTime))
 
-        if remappingCheck:
-            fig.add_hline(y=-6000, line_dash='dash', line_color='black', 
-                                    label=dict(text='+10º', textposition='top center', font=dict(size=12)), 
-                                    opacity=0.7, line_width=0.9)
+        if remappingCheck and 'Y' in xyTracked:
+            lines += (updateRemapLine(-6000, -2000, 'Y', endTime))
             
-            fig.add_hline(y=-2000, line_dash='dash', line_color='black', 
-                                    label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
-                                    opacity=0.7, line_width=0.9)
-
+        fig.update_layout(shapes = lines)
         logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
 
     except Exception as e:
@@ -201,6 +203,8 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck) -> go.FigureW
         raise 
 
     return fig
+
+
 
 #------- TAB CREATION --------#
 '''Creates new tab for a file being uploaded'''
@@ -280,6 +284,29 @@ def updateRemapLineValue(relayoutData, plus10Value, minus10Value) -> tuple:
 def updateRemapInput(plus10Value, minus10Value) -> tuple:
     return plus10Value, minus10Value
 
+def updateRemapLine(plus10Value, minus10Value, direction, endTime) -> list[dict]:
+    if direction == 'X': colour = 'black'
+    else: colour = 'red'
+
+    lines = [
+            dict(
+                type="line", y0= plus10Value, y1= plus10Value, x0=0, x1=endTime,
+                xref = 'x', yref='y', line_dash='dash', line_color=colour, 
+                label=dict(text=(f'+10º {direction}'), textposition='top center', font=dict(size=12)), 
+                opacity=0.7, line_width=0.9),
+
+            dict(
+                type="line", y0= minus10Value, y1= minus10Value, x0=0, x1=endTime,
+                xref = 'x', yref='y', line_dash='dash', line_color=colour, 
+                label=dict(text=(f'-10º {direction}'), textposition='top center', font=dict(size=12)), 
+                opacity=0.7, line_width=0.9),
+    ]
+    '''dict(
+        type="h_line", y= minus10Value, line_dash='dash', line_color=colour, 
+        label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
+        opacity=0.7, line_width=0.9)'''
+
+    return lines
 
 #------- MAIN FUNCTION --------#
 '''Launches Dash app'''
