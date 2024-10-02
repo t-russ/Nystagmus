@@ -148,9 +148,9 @@ def updateEyeTracked(inputTrial, activeTab) -> list:
         [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
         Input({'type': 'xy-tracked', 'index': MATCH}, 'value'),
-        Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
-        State({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
-        State({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data')
+        Input({'type': 'remapping-check-x', 'index': MATCH}, 'value'),
+        State({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
+        State({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data')
         ],)
 def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, minus10Value) -> go.FigureWidget:
     logger.debug("Updating Graph")
@@ -248,9 +248,9 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
 
 
 #------- REMAPPING CONTROLS/LINES --------#
-@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check', 'index': MATCH}, 'value'),
+@callback(Output({'type': 'remapping-plus10degs-x', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs-x', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check-x', 'index': MATCH}, 'value'),
           prevent_initial_call=True)        
 def enableRemappingInput(remappingCheck) -> tuple:
     if remappingCheck:
@@ -259,11 +259,11 @@ def enableRemappingInput(remappingCheck) -> tuple:
     else:
         return True, True
 
-@callback(Output({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
-          Output({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
+@callback(Output({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
+          Output({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data'),
           Input({'type': 'nystagmus-plot', 'index': MATCH}, 'relayoutData'),
-          State({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
-          State({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
+          State({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
+          State({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data'),
           prevent_initial_call=True)
 def updateRemapLineValue(relayoutData, plus10Value, minus10Value) -> tuple:
     print(relayoutData)

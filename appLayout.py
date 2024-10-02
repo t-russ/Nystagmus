@@ -35,34 +35,68 @@ def createGraphControls(recordingIndex, trialCount):
             ),
 
             html.Div([
-                dbc.Checklist(id={'type': 'remapping-check', 'index': recordingIndex}, options=['Enable Remapping'], inline=True,
-                            labelStyle={"margin-right": 10},
-                            inputStyle={"margin-right": 5}),
+                dcc.Store(id={'type': 'remapping-minus10degs-value-x', 'index': recordingIndex}, data= -2000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value-x', 'index': recordingIndex}, data= -2000),
+                dbc.Checklist(id={'type': 'remapping-check-x', 'index': recordingIndex}, options=['Enable X Calibration'], inline=True,
+                            labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
+
+                dbc.Row([
+                    dbc.Col([
+                        html.Label('+10º'),
+                        dbc.Input(id={'type': 'remapping-plus10degs-x', 'index': recordingIndex},
+                                 type='number', placeholder='', disabled=True),
+                        ], 
+                        width='5'),
+
+                    dbc.Col([
+                        html.Label('-10º'),
+                        dbc.Input(id={'type': 'remapping-minus10degs-x', 'index': recordingIndex},
+                                type='number', placeholder='', disabled=True),
+                        ], 
+                        width='5'),
                     ],
-                    style= {"margin-bottom": 10, "text-align": "center"}
+                    justify='center',
+                ),
+
+                ],      
+                style= {"margin-bottom": 10, "text-align": "center"},
             ),
 
             html.Div([
-                html.Label('+10º'),
-                dcc.Store(id={'type': 'remapping-plus10degs-value', 'index': recordingIndex}, data= -6000),
-                dbc.Input(id={'type': 'remapping-plus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
+                dcc.Store(id={'type': 'remapping-minus10degs-value-y', 'index': recordingIndex}, data= -2000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value-y', 'index': recordingIndex}, data= -2000),
+                dbc.Checklist(id={'type': 'remapping-check-y', 'index': recordingIndex}, options=['Enable Y Calibration'], inline=True,
+                            labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
+                            
+                dbc.Row([
+                    dbc.Col([
+                        html.Label('+10º'),
+                        dbc.Input(id={'type': 'remapping-plus10degs-y', 'index': recordingIndex},
+                                 type='number', placeholder='', disabled=True),
+                        ], 
+                        width='5'),
+
+                    dbc.Col([
+                        html.Label('-10º'),
+                        dbc.Input(id={'type': 'remapping-minus10degs-y', 'index': recordingIndex},
+                                type='number', placeholder='', disabled=True),
+                        ], 
+                        width='5'),
                     ],
-                
-                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"},
+                    justify='center',
+                ),
+
+                ],      
+                style= {"margin-bottom": 10, "margin-top": 10, "text-align": "center"},
             ),
 
             html.Div([
-                html.Label('-10º'),
-                dcc.Store(id={'type': 'remapping-minus10degs-value', 'index': recordingIndex}, data= -2000),
-                dbc.Input(id={'type': 'remapping-minus10degs', 'index': recordingIndex}, type='number', placeholder='Enter Remapping Value', disabled=True),
-                    ],
-                
-                style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
-            )
+                dbc.Button("Calibrate Data", id={'type': 'calibrate-button', 'index': recordingIndex}, color="primary", className="mr-2"),
+            ]),
         ],
         body=True,
-    )
-
+        )
+    
     return new_graph_controls
 
 upload_button = html.Div([
