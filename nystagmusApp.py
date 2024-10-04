@@ -1,8 +1,8 @@
 import numpy as np
-import logging, time, os, base64, tempfile, copy, json, webbrowser
+import logging, time, os, base64, tempfile, copy, json, webbrowser, re
 from pathlib import Path
 
-from dash import dcc, Input, Output, callback, State, callback_context, MATCH
+from dash import dcc, Input, Output, callback, State, callback_context, MATCH, ALL
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
@@ -144,14 +144,14 @@ def updateEyeTracked(inputTrial, activeTab) -> list:
     return eyesTracked
 
 '''Updates graph when value in controls is changed'''
-@callback(Output({'type': 'nystagmus-plot', 'index':MATCH}, 'figure'),
-        [Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
+@callback(Output({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
+        Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
         Input({'type':'eye-tracked', 'index': MATCH}, 'value'),
         Input({'type': 'xy-tracked', 'index': MATCH}, 'value'),
-        Input({'type': 'remapping-check-x', 'index': MATCH}, 'value'),
-        State({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
-        State({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data')
-        ],)
+        Input({'type': 'remapping-check', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'value'),
+        State({'type': 'remapping-plus10degs-value', 'eye': ALL, 'direction': ALL,  'index': MATCH}, 'data'),
+        State({'type': 'remapping-minus10degs-value', 'eye': ALL, 'direction': ALL,  'index': MATCH}, 'data'),  
+        )
 def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, minus10Value) -> go.FigureWidget:
     logger.debug("Updating Graph")
 
@@ -188,12 +188,20 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
             fig.add_trace(go.Scatter(x=timeData, y=xRightData, mode='lines', name='X Right Eye', line = dict(color='#00CC96')))
         if 'Right' in eyeTracked and 'Y' in xyTracked:
             fig.add_trace(go.Scatter(x=timeData, y=yRightData, mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+        
+        
         lines = []
-        if remappingCheck and 'X' in xyTracked:
-            lines += (updateRemapLine(plus10Value, minus10Value, 'X', endTime))
+        if remappingCheck[0]:
+            lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'X', 'Left', endTime))
 
-        if remappingCheck and 'Y' in xyTracked:
-            lines += (updateRemapLine(-6000, -2000, 'Y', endTime))
+        if remappingCheck[1]:
+            lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'Y', 'Left', endTime))
+
+        if remappingCheck[2]:
+            lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'X', 'Right', endTime))
+            
+        if remappingCheck[3]:
+            lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'Y', 'Right', endTime))
             
         fig.update_layout(shapes = lines)
         logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
@@ -248,16 +256,49 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
 
 
 #------- REMAPPING CONTROLS/LINES --------#
-@callback(Output({'type': 'remapping-plus10degs-x', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs-x', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check-x', 'index': MATCH}, 'value'),
+'''@callback(Output({'type': 'remapping-plus10degs-x-left', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs-x-left', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check-x-left', 'index': MATCH}, 'value'),
           prevent_initial_call=True)        
+def enableRemappingInputYLeft(remappingCheck) -> tuple:
+    return enableRemappingInput(remappingCheck)
+    
+@callback(Output({'type': 'remapping-plus10degs-y-left', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs-y-left', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check-y-left', 'index': MATCH}, 'value'),
+          prevent_initial_call=True)        
+def enableRemappingInputYLeft(remappingCheck) -> tuple:
+    return enableRemappingInput(remappingCheck)
+
+@callback(Output({'type': 'remapping-plus10degs-x-right', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs-x-right', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check-x-right', 'index': MATCH}, 'value'),
+          prevent_initial_call=True)        
+def enableRemappingInputYLeft(remappingCheck) -> tuple:
+    return enableRemappingInput(remappingCheck)
+    
+@callback(Output({'type': 'remapping-plus10degs-y-right', 'index': MATCH}, 'disabled'),
+          Output({'type': 'remapping-minus10degs-y-right', 'index': MATCH}, 'disabled'),
+          Input({'type': 'remapping-check-y-right', 'index': MATCH}, 'value'),
+          prevent_initial_call=True)        
+def enableRemappingInputYLeft(remappingCheck) -> tuple:
+    return enableRemappingInput(remappingCheck)
+
 def enableRemappingInput(remappingCheck) -> tuple:
     if remappingCheck:
         return False, False
     
     else:
-        return True, True
+        return True, True'''
+
+@callback(
+    Output({'type': 'remapping-plus10degs', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'disabled'),
+    Output({'type': 'remapping-minus10degs', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'disabled'),
+    Input({'type': 'remapping-check', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'value'),
+    prevent_initial_call=True
+)
+def enable_remapping_input(remapping_check):
+    return not remapping_check, not remapping_check
 
 @callback(Output({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
           Output({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data'),
@@ -276,35 +317,34 @@ def updateRemapLineValue(relayoutData, plus10Value, minus10Value) -> tuple:
 
     return plus10Value, minus10Value
 
-@callback(Output({'type': 'remapping-plus10degs', 'index': MATCH}, 'value'),
-            Output({'type': 'remapping-minus10degs', 'index': MATCH}, 'value'),
-            Input({'type': 'remapping-plus10degs-value', 'index': MATCH}, 'data'),
-            Input({'type': 'remapping-minus10degs-value', 'index': MATCH}, 'data'),
-            prevent_initial_call=True)
+@callback(Output({'type': 'remapping-plus10degs', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'value'),
+        Output({'type': 'remapping-minus10degs',  'eye': MATCH, 'direction': MATCH,   'index': MATCH}, 'value'),
+        Input({'type': 'remapping-plus10degs-value', 'eye': MATCH, 'direction': MATCH,  'index': MATCH}, 'data'),
+        Input({'type': 'remapping-minus10degs-value', 'eye': MATCH, 'direction': MATCH,  'index': MATCH}, 'data'),
+        prevent_initial_call=True)
 def updateRemapInput(plus10Value, minus10Value) -> tuple:
     return plus10Value, minus10Value
 
-def updateRemapLine(plus10Value, minus10Value, direction, endTime) -> list[dict]:
-    if direction == 'X': colour = 'black'
-    else: colour = 'red'
+def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -> list[dict]:
+    if direction == 'X' and eyeTracked == 'Left': colour = 'black'
+    if direction == 'X' and eyeTracked == 'Right': colour = '#8B008B'
+    if direction == 'Y' and eyeTracked == 'Left': colour = '#7FFFD4'
+    else: colour = 'DarkRed'
 
     lines = [
             dict(
                 type="line", y0= plus10Value, y1= plus10Value, x0=0, x1=endTime,
                 xref = 'x', yref='y', line_dash='dash', line_color=colour, 
                 label=dict(text=(f'+10º {direction}'), textposition='top center', font=dict(size=12)), 
-                opacity=0.7, line_width=0.9),
+                opacity=0.8, line_width=0.9),
 
             dict(
                 type="line", y0= minus10Value, y1= minus10Value, x0=0, x1=endTime,
                 xref = 'x', yref='y', line_dash='dash', line_color=colour, 
-                label=dict(text=(f'-10º {direction}'), textposition='top center', font=dict(size=12)), 
-                opacity=0.7, line_width=0.9),
+                label=dict(text=(f'-10º {direction} {eyeTracked}'), textposition='top center', font=dict(size=12)), 
+                opacity=0.8, line_width=0.9)
     ]
-    '''dict(
-        type="h_line", y= minus10Value, line_dash='dash', line_color=colour, 
-        label=dict(text='-10º', textposition='top center', font=dict(size=12)), 
-        opacity=0.7, line_width=0.9)'''
+
 
     return lines
 
@@ -314,5 +354,3 @@ if __name__ == '__main__':
     port = 8050
     webbrowser.open_new(f'http://127.0.0.1:{port}')
     app.run(debug=True, port=port, use_reloader=False)
-    #app.run(debug=True, port=port)
-
