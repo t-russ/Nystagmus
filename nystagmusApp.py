@@ -261,40 +261,7 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
 
 
 #------- REMAPPING CONTROLS/LINES --------#
-'''@callback(Output({'type': 'remapping-plus10degs-x-left', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs-x-left', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check-x-left', 'index': MATCH}, 'value'),
-          prevent_initial_call=True)        
-def enableRemappingInputYLeft(remappingCheck) -> tuple:
-    return enableRemappingInput(remappingCheck)
-    
-@callback(Output({'type': 'remapping-plus10degs-y-left', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs-y-left', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check-y-left', 'index': MATCH}, 'value'),
-          prevent_initial_call=True)        
-def enableRemappingInputYLeft(remappingCheck) -> tuple:
-    return enableRemappingInput(remappingCheck)
 
-@callback(Output({'type': 'remapping-plus10degs-x-right', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs-x-right', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check-x-right', 'index': MATCH}, 'value'),
-          prevent_initial_call=True)        
-def enableRemappingInputYLeft(remappingCheck) -> tuple:
-    return enableRemappingInput(remappingCheck)
-    
-@callback(Output({'type': 'remapping-plus10degs-y-right', 'index': MATCH}, 'disabled'),
-          Output({'type': 'remapping-minus10degs-y-right', 'index': MATCH}, 'disabled'),
-          Input({'type': 'remapping-check-y-right', 'index': MATCH}, 'value'),
-          prevent_initial_call=True)        
-def enableRemappingInputYLeft(remappingCheck) -> tuple:
-    return enableRemappingInput(remappingCheck)
-
-def enableRemappingInput(remappingCheck) -> tuple:
-    if remappingCheck:
-        return False, False
-    
-    else:
-        return True, True'''
 
 @callback(
     Output({'type': 'remapping-plus10degs', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'disabled'),
