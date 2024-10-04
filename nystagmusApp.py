@@ -191,19 +191,24 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
         
         
         lines = []
-        if remappingCheck[0]:
+        if (remappingCheck[0] is not None) and remappingCheck[0] and remappingCheck[0][0] == True:
+            print('X Left Remapping')
             lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'X', 'Left', endTime))
 
-        if remappingCheck[1]:
+        if (remappingCheck[1] is not None) and remappingCheck[1] and remappingCheck[1][0] == True:
+            print('Y Left Remapping')
             lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'Y', 'Left', endTime))
 
-        if remappingCheck[2]:
+        if (remappingCheck[2] is not None) and remappingCheck[2] and remappingCheck[2][0] == True:
+            print('X Right Remapping')
             lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'X', 'Right', endTime))
-            
-        if remappingCheck[3]:
+
+        if (remappingCheck[3] is not None) and remappingCheck[3] and remappingCheck[3][0] == True:
+            print('Y Right Remapping')
             lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'Y', 'Right', endTime))
             
         fig.update_layout(shapes = lines)
+        fig.update_layout(showlegend=True)
         logger.debug(f"Graph Updated with {'/'.join(str(eye) for eye in eyeTracked)} eye and {'/'.join(str(direction) for direction in xyTracked)} direction.")
 
     except Exception as e:
@@ -326,7 +331,7 @@ def updateRemapInput(plus10Value, minus10Value) -> tuple:
     return plus10Value, minus10Value
 
 def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -> list[dict]:
-    if direction == 'X' and eyeTracked == 'Left': colour = 'black'
+    if direction == 'X' and eyeTracked == 'Left': colour = 'black',
     if direction == 'X' and eyeTracked == 'Right': colour = '#8B008B'
     if direction == 'Y' and eyeTracked == 'Left': colour = '#7FFFD4'
     else: colour = 'DarkRed'
@@ -335,14 +340,14 @@ def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -
             dict(
                 type="line", y0= plus10Value, y1= plus10Value, x0=0, x1=endTime,
                 xref = 'x', yref='y', line_dash='dash', line_color=colour, 
-                label=dict(text=(f'+10º {direction}'), textposition='top center', font=dict(size=12)), 
-                opacity=0.8, line_width=0.9),
+                label=dict(text=(f'+10º {direction} {eyeTracked}'), textposition='top center', font=dict(size=12)), 
+                opacity=1, line_width=0.95),
 
             dict(
                 type="line", y0= minus10Value, y1= minus10Value, x0=0, x1=endTime,
                 xref = 'x', yref='y', line_dash='dash', line_color=colour, 
                 label=dict(text=(f'-10º {direction} {eyeTracked}'), textposition='top center', font=dict(size=12)), 
-                opacity=0.8, line_width=0.9)
+                opacity=1, line_width=0.95)
     ]
 
 

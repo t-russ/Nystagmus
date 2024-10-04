@@ -149,7 +149,9 @@ def createGraphControls(recordingIndex, trialCount):
 
             html.Div([
                 dbc.Button("Calibrate Data", id={'type': 'calibrate-button', 'index': recordingIndex}, color="primary", className="mr-2"),
-            ], id={'type': 'calibrate-button-div', 'index': recordingIndex},),
+                ], 
+            id={'type': 'calibrate-button-div', 'index': recordingIndex}, className="d-flex justify-content-center", style={"margin-top": "10px"},
+            ),
         ],
         body=True,
         )
