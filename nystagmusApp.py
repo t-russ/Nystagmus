@@ -193,19 +193,19 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
         lines = []
         if (remappingCheck[0] is not None) and remappingCheck[0] and remappingCheck[0][0] == True:
             print('X Left Remapping')
-            lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'X', 'Left', endTime))
+            lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'x', 'left', endTime))
 
         if (remappingCheck[1] is not None) and remappingCheck[1] and remappingCheck[1][0] == True:
             print('Y Left Remapping')
-            lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'Y', 'Left', endTime))
+            lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'y', 'left', endTime))
 
         if (remappingCheck[2] is not None) and remappingCheck[2] and remappingCheck[2][0] == True:
             print('X Right Remapping')
-            lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'X', 'Right', endTime))
+            lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'x', 'right', endTime))
 
         if (remappingCheck[3] is not None) and remappingCheck[3] and remappingCheck[3][0] == True:
             print('Y Right Remapping')
-            lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'Y', 'Right', endTime))
+            lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'y', 'right', endTime))
             
         fig.update_layout(shapes = lines)
         fig.update_layout(showlegend=True)
@@ -269,25 +269,51 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     Input({'type': 'remapping-check', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'value'),
     prevent_initial_call=True
 )
-def enable_remapping_input(remapping_check):
-    return not remapping_check, not remapping_check
+def enable_remapping_input(remappingCheck):
+    return not remappingCheck, not remappingCheck
 
-@callback(Output({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
-          Output({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data'),
+@callback(Output({'type': 'remapping-plus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
+          Output({'type': 'remapping-minus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
           Input({'type': 'nystagmus-plot', 'index': MATCH}, 'relayoutData'),
-          State({'type': 'remapping-plus10degs-value-x', 'index': MATCH}, 'data'),
-          State({'type': 'remapping-minus10degs-value-x', 'index': MATCH}, 'data'),
+          State({'type': 'remapping-plus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
+          State({'type': 'remapping-minus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
+          State({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
           prevent_initial_call=True)
-def updateRemapLineValue(relayoutData, plus10Value, minus10Value) -> tuple:
-    print(relayoutData)
-    if 'shapes[1].y1' in relayoutData.keys():
-        plus10Value = round(relayoutData['shapes[1].y1'])
+def updateRemapLineValue(relayoutData, plus10Value, minus10Value, fig) -> tuple:
 
-        
-    if 'shapes[0].y1' in relayoutData.keys():
-        minus10Value = round(relayoutData['shapes[0].y1'])
+    shapeIndex = getShapeIndex(relayoutData)
+
+    if shapeIndex is None:
+        return plus10Value, minus10Value
+    
+    #Get the shape that was moved
+    shapeMoved = fig['layout']['shapes'][shapeIndex]
+    shapeName = shapeMoved['name']
+
+    #Get the eye and direction from the callback context
+    triggered_id = callback_context.states_list[0]['id']
+    eye = triggered_id['eye']
+    direction = triggered_id['direction']
+
+    contextShapeName = f'{direction}{eye}'
+
+    if shapeName == f'plus{contextShapeName}':
+        plus10Value = round(shapeMoved['y0'])
+
+    elif shapeName == f'minus{contextShapeName}':
+        minus10Value = round(shapeMoved['y0'])
 
     return plus10Value, minus10Value
+
+def getShapeIndex(relayoutData) -> int:
+    firstKey = list(relayoutData.keys())[0]
+
+    if 'shapes[' in firstKey:
+        # Extract the index using string splitting
+        indexStr = firstKey.split('[')[1].split(']')[0]
+        return int(indexStr)
+    
+    return None
 
 @callback(Output({'type': 'remapping-plus10degs', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'value'),
         Output({'type': 'remapping-minus10degs',  'eye': MATCH, 'direction': MATCH,   'index': MATCH}, 'value'),
@@ -306,13 +332,13 @@ def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -
     lines = [
             dict(
                 type="line", y0= plus10Value, y1= plus10Value, x0=0, x1=endTime,
-                xref = 'x', yref='y', line_dash='dash', line_color=colour, 
+                xref = 'x', yref='y', line_dash='dash', line_color=colour, name=f'plus{direction}{eyeTracked}',
                 label=dict(text=(f'+10º {direction} {eyeTracked}'), textposition='top center', font=dict(size=12)), 
                 opacity=1, line_width=0.95),
 
             dict(
                 type="line", y0= minus10Value, y1= minus10Value, x0=0, x1=endTime,
-                xref = 'x', yref='y', line_dash='dash', line_color=colour, 
+                xref = 'x', yref='y', line_dash='dash', line_color=colour, name=f'minus{direction}{eyeTracked}', 
                 label=dict(text=(f'-10º {direction} {eyeTracked}'), textposition='top center', font=dict(size=12)), 
                 opacity=1, line_width=0.95)
     ]
