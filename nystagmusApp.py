@@ -192,20 +192,16 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
         
         lines = []
         if (remappingCheck[0] is not None) and remappingCheck[0] and remappingCheck[0][0] == True:
-            print('X Left Remapping')
-            lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'x', 'left', endTime))
+            lines += (updateRemapLine(plus10Value[0], minus10Value[0], 'X', 'Left', endTime))
 
         if (remappingCheck[1] is not None) and remappingCheck[1] and remappingCheck[1][0] == True:
-            print('Y Left Remapping')
-            lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'y', 'left', endTime))
+            lines += (updateRemapLine(plus10Value[1], minus10Value[1], 'Y', 'Left', endTime))
 
         if (remappingCheck[2] is not None) and remappingCheck[2] and remappingCheck[2][0] == True:
-            print('X Right Remapping')
-            lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'x', 'right', endTime))
+            lines += (updateRemapLine(plus10Value[2], minus10Value[2], 'X', 'Right', endTime))
 
         if (remappingCheck[3] is not None) and remappingCheck[3] and remappingCheck[3][0] == True:
-            print('Y Right Remapping')
-            lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'y', 'right', endTime))
+            lines += (updateRemapLine(plus10Value[3], minus10Value[3], 'Y', 'Right', endTime))
             
         fig.update_layout(shapes = lines)
         fig.update_layout(showlegend=True)
@@ -262,7 +258,7 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
 
 #------- REMAPPING CONTROLS/LINES --------#
 
-
+'''Enables/disables remapping input based on checkbox value'''
 @callback(
     Output({'type': 'remapping-plus10degs', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'disabled'),
     Output({'type': 'remapping-minus10degs', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'disabled'),
@@ -272,6 +268,8 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
 def enable_remapping_input(remappingCheck):
     return not remappingCheck, not remappingCheck
 
+
+'''Updates the value of the remapping lines value when they are moved'''
 @callback(Output({'type': 'remapping-plus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
           Output({'type': 'remapping-minus10degs-value', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'data'),
           Input({'type': 'nystagmus-plot', 'index': MATCH}, 'relayoutData'),
@@ -305,6 +303,7 @@ def updateRemapLineValue(relayoutData, plus10Value, minus10Value, fig) -> tuple:
 
     return plus10Value, minus10Value
 
+'''Extracts the index of the shape that was moved'''
 def getShapeIndex(relayoutData) -> int:
     firstKey = list(relayoutData.keys())[0]
 
@@ -315,6 +314,7 @@ def getShapeIndex(relayoutData) -> int:
     
     return None
 
+'''Updates the input box value when value is changed'''
 @callback(Output({'type': 'remapping-plus10degs', 'eye': MATCH, 'direction': MATCH, 'index': MATCH}, 'value'),
         Output({'type': 'remapping-minus10degs',  'eye': MATCH, 'direction': MATCH,   'index': MATCH}, 'value'),
         Input({'type': 'remapping-plus10degs-value', 'eye': MATCH, 'direction': MATCH,  'index': MATCH}, 'data'),
@@ -323,11 +323,12 @@ def getShapeIndex(relayoutData) -> int:
 def updateRemapInput(plus10Value, minus10Value) -> tuple:
     return plus10Value, minus10Value
 
+'''Returns new line to be drawn on the graph'''
 def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -> list[dict]:
-    if direction == 'X' and eyeTracked == 'Left': colour = 'black',
-    if direction == 'X' and eyeTracked == 'Right': colour = '#8B008B'
-    if direction == 'Y' and eyeTracked == 'Left': colour = '#7FFFD4'
-    else: colour = 'DarkRed'
+    if direction == 'X' and eyeTracked == 'Left': colour = '#ee07f2'
+    elif direction == 'X' and eyeTracked == 'Right': colour = 'black'
+    elif direction == 'Y' and eyeTracked == 'Left': colour = '#0000ff'
+    else: colour = 'red'
 
     lines = [
             dict(

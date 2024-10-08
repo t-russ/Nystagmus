@@ -33,23 +33,23 @@ def createGraphControls(recordingIndex, trialCount):
             ),
 
             html.Div([
-                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'left', 'direction':'x', 'index': recordingIndex}, data= -2000),
-                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'left', 'direction':'x', 'index': recordingIndex}, data= -6000),
-                dbc.Checklist(id={'type': 'remapping-check',  'eye':'left', 'direction':'x', 'index': recordingIndex}, 
+                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'Left', 'direction':'X', 'index': recordingIndex}, data= -2000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'Left', 'direction':'X', 'index': recordingIndex}, data= -6000),
+                dbc.Checklist(id={'type': 'remapping-check',  'eye':'Left', 'direction':'X', 'index': recordingIndex}, 
                 options=[{'label': 'Enable X Left Calibration','value': True}],
                 inline=True, labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
 
                 dbc.Row([
                     dbc.Col([
                         html.Label('+10º'),
-                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'left', 'direction':'x', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'Left', 'direction':'X', 'index': recordingIndex},
                                  type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
 
                     dbc.Col([
                         html.Label('-10º'),
-                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'left', 'direction':'x', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'Left', 'direction':'X', 'index': recordingIndex},
                                 type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
@@ -62,23 +62,23 @@ def createGraphControls(recordingIndex, trialCount):
             ),
 
             html.Div([
-                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'left', 'direction':'y', 'index': recordingIndex}, data= -4000),
-                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'left', 'direction':'y', 'index': recordingIndex}, data= -8000),
-                dbc.Checklist(id={'type': 'remapping-check', 'eye':'left', 'direction':'y', 'index': recordingIndex}, 
+                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'Left', 'direction':'Y', 'index': recordingIndex}, data= -4000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'Left', 'direction':'Y', 'index': recordingIndex}, data= -8000),
+                dbc.Checklist(id={'type': 'remapping-check', 'eye':'Left', 'direction':'Y', 'index': recordingIndex}, 
                             options=[{'label': 'Enable Y Left Calibration','value': True}], inline=True,
                             labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
                             
                 dbc.Row([
                     dbc.Col([
                         html.Label('+10º'),
-                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'left', 'direction':'y', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'Left', 'direction':'Y', 'index': recordingIndex},
                                  type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
 
                     dbc.Col([
                         html.Label('-10º'),
-                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'left', 'direction':'y', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'Left', 'direction':'Y', 'index': recordingIndex},
                                 type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
@@ -90,23 +90,23 @@ def createGraphControls(recordingIndex, trialCount):
                 style= {"margin-bottom": 10, "margin-top": 10, "text-align": "center"}, id={'type': 'calibration-y-left', 'index': recordingIndex},
             ),
             html.Div([
-                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'right', 'direction':'x', 'index': recordingIndex}, data= -2000),
-                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'right', 'direction':'x', 'index': recordingIndex}, data= -6000),
-                dbc.Checklist(id={'type': 'remapping-check', 'eye':'right', 'direction':'x', 'index': recordingIndex}, 
+                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'Right', 'direction':'X', 'index': recordingIndex}, data= -2000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'Right', 'direction':'X', 'index': recordingIndex}, data= -6000),
+                dbc.Checklist(id={'type': 'remapping-check', 'eye':'Right', 'direction':'X', 'index': recordingIndex}, 
                             options=[{'label': 'Enable X Right Calibration','value': True}], inline=True,
                             labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
 
                 dbc.Row([
                     dbc.Col([
                         html.Label('+10º'),
-                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'right', 'direction':'x', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'Right', 'direction':'X', 'index': recordingIndex},
                                  type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
 
                     dbc.Col([
                         html.Label('-10º'),
-                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'right', 'direction':'x', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'Right', 'direction':'X', 'index': recordingIndex},
                                 type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
@@ -119,23 +119,23 @@ def createGraphControls(recordingIndex, trialCount):
             ),
 
             html.Div([
-                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'right', 'direction':'y', 'index': recordingIndex}, data= -4000),
-                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'right', 'direction':'y', 'index': recordingIndex}, data= -8000),
-                dbc.Checklist(id={'type': 'remapping-check', 'eye':'right', 'direction':'y', 'index': recordingIndex},
+                dcc.Store(id={'type': 'remapping-minus10degs-value', 'eye':'Right', 'direction':'Y', 'index': recordingIndex}, data= -4000),
+                dcc.Store(id={'type': 'remapping-plus10degs-value', 'eye':'Right', 'direction':'Y', 'index': recordingIndex}, data= -8000),
+                dbc.Checklist(id={'type': 'remapping-check', 'eye':'Right', 'direction':'Y', 'index': recordingIndex},
                             options=[{'label': 'Enable Y Right Calibration','value': True}], inline=True,
                             labelStyle={"margin-right": 10},inputStyle={"margin-right": 5}),
                             
                 dbc.Row([
                     dbc.Col([
                         html.Label('+10º'),
-                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'right', 'direction':'y', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-plus10degs', 'eye':'Right', 'direction':'Y', 'index': recordingIndex},
                                  type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
 
                     dbc.Col([
                         html.Label('-10º'),
-                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'right', 'direction':'y', 'index': recordingIndex},
+                        dbc.Input(id={'type': 'remapping-minus10degs', 'eye':'Right', 'direction':'Y', 'index': recordingIndex},
                                 type='number', placeholder='', disabled=True),
                         ], 
                         width='5'),
