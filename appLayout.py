@@ -6,7 +6,8 @@ app = Dash(external_stylesheets=[dbc.themes.COSMO])
 def createGraphControls(recordingIndex, trialCount):
 
     new_graph_controls = dbc.Card(
-        [
+        [   
+            dcc.Store(id={'type':'calibrate-trigger', 'index':recordingIndex}, data=0),
             html.Div([
                 html.Label('Trial:'),
                 dcc.Dropdown(id={'type':'trial-dropdown', 'index': recordingIndex}, options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",

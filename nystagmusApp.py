@@ -8,14 +8,15 @@ import plotly.graph_objects as go
 
 from EDFTrialParsing import EDFTrialParser
 from EDF_file_importer.EyeLinkDataImporter import EDFToNumpy
-
 from appLayout import createGraphControls, app
+from linearRegression import applyRecordingLinearRegression
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
 
 
 recordingList = []
+calibratedRecordingList = []
 
 #----------------- APP FUNCTIONS/CALLBACKS ------------------#
 
@@ -238,7 +239,7 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
                     children=[dbc.Row(
                             [
                             dbc.Col(newGraphControls, width=3, style={"height": "100%"}), 
-                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'110vh', 'height': '80vh'},
+                            dbc.Col(dcc.Graph(id ={'type': 'nystagmus-plot', 'index':newRecordingIndex}, style={'width':'140vh', 'height': '80vh'},
                                               config={'edits': {'shapePosition': True}, 'displaylogo': False}),
                                     width=9, style={"height": "100%"}),
                             ],
@@ -346,6 +347,57 @@ def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -
 
 
     return lines
+
+#------- CALIBRATION --------#
+@callback(Output({'type':'calibrate-trigger', 'index':MATCH}, 'data'),
+        Input({'type': 'calibrate-button', 'index':MATCH}, 'n_clicks'),
+        State({'type':'remapping-check', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'value'),
+        State({'type': 'remapping-plus10degs-value', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'data'),
+        State({'type': 'remapping-minus10degs-value', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'data'),
+        prevent_initial_call=True)
+def calibrateData(buttonClicks, remappingChecks, plus10Values, minus10Values) -> int:
+    statesList = callback_context.states_list[0]
+    relevantRecordingIndex = statesList[0]['id']['index']
+
+    relevantRecording = recordingList[relevantRecordingIndex]
+
+    relevantRecordingName = relevantRecording[0]
+    relevantRecordingTrials = relevantRecording[1]
+
+    tickedDirections = getTickedRemapDirections(statesList)
+    calibrationData = makeCalibrationDict(tickedDirections, plus10Values, minus10Values)
+
+    calibratedRecording = applyRecordingLinearRegression(relevantRecordingTrials, calibrationData)
+
+    calibratedRecordingName = f'{relevantRecordingName} - Calibrated'
+    calibratedRecordingList.append([calibratedRecordingName, calibratedRecording])
+    print('\n --------------------new calibrated recording--------------------- \n')
+    print(calibrationData)
+    print(calibratedRecordingList[0])
+
+
+def getTickedRemapDirections(statesList) -> list:
+    tickedDirections = []
+    for i in range(4):
+        currentCheck = statesList[i]
+        if 'value' in currentCheck and currentCheck['value'] == [True]:
+            direction = currentCheck['id']['direction']
+            eye = currentCheck['id']['eye']
+            tickedDirections.append((direction + eye))
+    
+    return tickedDirections
+
+def makeCalibrationDict(tickedDirections, plus10Values, minus10Values) -> dict:
+    calibrationData = {}
+    directionToIndex = {'XLeft': 0, 'YLeft': 1, 'XRight': 2, 'YRight': 3}
+
+    for direction in tickedDirections:
+        index = directionToIndex[direction]
+        calibrationData[direction] = {'plus10Degs': plus10Values[index], 'minus10Degs': minus10Values[index]}
+
+    return calibrationData
+
+
 
 #------- MAIN FUNCTION --------#
 '''Launches Dash app'''

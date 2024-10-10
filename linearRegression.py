@@ -48,20 +48,14 @@ def extractRelevantData(trialData: pd.DataFrame, eyeDirectionString: str) -> pd.
 
     return extractedData
 
-def applyRecordingLinearRegression(recording: EDFTrialParser, calibrationData: dict) -> list:
+def applyRecordingLinearRegression(recording:list, calibrationData: dict) -> list:
     #loop over all trials applying linear regression
     #return a list of all the calibrated trials data
     calibratedTrialsSampleData = []
-    for trial in recording.trials:
+
+    for trial in recording:
         calibratedTrial = applyTrialLinearRegression(trial.sampleData, calibrationData)
         calibratedTrialsSampleData.append(calibratedTrial)
 
     return calibratedTrialsSampleData
 
-
-test = applyRecordingLinearRegression(brRecordingObj, testDict)
-
-fig = go.FigureWidget()
-fig.add_trace(go.Scatter(x=test[0].index, y=test[0]['posXRight'], mode='lines', name='X Right'))
-fig.add_trace(go.Scatter(x=test[1].index, y=test[1]['posYRight'], mode='lines', name='Y Right'))
-fig.show()
