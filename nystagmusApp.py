@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 from EDFTrialParsing import EDFTrialParser
 from EDF_file_importer.EyeLinkDataImporter import EDFToNumpy
-from appLayout import createGraphControls, app
+from appLayout import createGraphControls, app, makeNewCalibratedTab
 from linearRegression import applyRecordingLinearRegression
 
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
@@ -218,11 +218,12 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
 
 #------- TAB CREATION --------#
 '''Creates new tab for a file being uploaded'''
-@callback(Output('tabs', 'children'),
-          Output('tabs', 'active_tab'),
+@callback(Output('tabs', 'children', allow_duplicate=True),
+          Output('tabs', 'active_tab', allow_duplicate=True),
           Input('upload-trigger', 'data'),
         [State('tabs', 'children')],
-        prevent_initial_call=True)    
+        prevent_initial_call=True,
+        allow_duplicate=True)    
 def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     recordingCount:int = len(recordingList)
     if recordingCount == 0:
@@ -253,8 +254,29 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     else:
         newTabs.append(newTab)
         return newTabs, newTabID
+    
+@callback(Output('tabs', 'children'),
+          Output('tabs', 'active_tab'),
+          Input({'type':'calibrate-trigger', 'index': ALL}, 'data'),
+          State('tabs', 'children'),
+          State('tabs', 'active_tab'),
+        prevent_initial_call=True)
+def addNewCalibratedTab(calibrateTrigger, currentTabs, activeTab) -> tuple:
+    calibratedRecordingCount = len(calibratedRecordingList)
+    if calibratedRecordingCount == 0:
+        return currentTabs, activeTab
+    
+    print(calibratedRecordingList[0][0])
+    
+    newTabs = copy.copy(currentTabs)
+    newCalibratedIndex = calibratedRecordingCount - 1
+    relevantRecording = calibratedRecordingList[newCalibratedIndex]
+    trialCount = len(relevantRecording[1])
 
+    newTab, newTabID = makeNewCalibratedTab(relevantRecording, newCalibratedIndex, trialCount)
+    newTabs.append(newTab)
 
+    return newTabs, newTabID
 
 
 #------- REMAPPING CONTROLS/LINES --------#
@@ -371,9 +393,11 @@ def calibrateData(buttonClicks, remappingChecks, plus10Values, minus10Values) ->
 
     calibratedRecordingName = f'{relevantRecordingName} - Calibrated'
     calibratedRecordingList.append([calibratedRecordingName, calibratedRecording])
-    print('\n --------------------new calibrated recording--------------------- \n')
-    print(calibrationData)
-    print(calibratedRecordingList[0])
+    #print('\n --------------------new calibrated recording--------------------- \n')
+    #print(calibrationData)
+    #print(calibratedRecordingList[0])
+
+    return buttonClicks
 
 
 def getTickedRemapDirections(statesList) -> list:

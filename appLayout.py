@@ -164,6 +164,54 @@ upload_button = html.Div([
     html.Div(id='upload-output', style={"margin-top": "10px" }, ),
 ])
 
+def createCalibratedGraphControls(calibratedIndex, trialCount):
+    controls = dbc.Card([
+        html.Div([
+                html.Label('Trial:'),
+                dcc.Dropdown(id={'type':'calibrated-trial-dropdown', 'index': calibratedIndex}, options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",
+                            clearable= False),
+                ],
+                style= {"margin-bottom": "10px"},
+            ),
+
+        html.Div([
+            html.Label('Eye Tracked:'),
+            dbc.Checklist(id ={'type':'calibrated-eye-tracked', 'index': calibratedIndex}, options=['Left', 'Right'],inline=True, 
+                        inputStyle={"margin-right": 5}),
+            ],
+            style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
+        ),
+
+        html.Div([
+                html.Label('Direction Tracked:'),
+                dbc.Checklist(id={'type': 'calibrated-xy-tracked', 'index': calibratedIndex}, options=['X', 'Y'], inline=True, 
+                            inputStyle={"margin-right": 5},
+                            value=['X', 'Y']),
+            ],
+            style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
+        ),
+    ])
+
+    return controls
+
+def makeNewCalibratedTab(relevantRecording, calibratedIndex, trialCount):
+    print(f'relevantRecording[0]:{relevantRecording[0]}')
+    recordingName = f'{relevantRecording[0]} - Calibrated'
+    newGraphControls = createCalibratedGraphControls(calibratedIndex, trialCount)
+    newTab = dbc.Tab(label=recordingName, tab_id=f"calibrated-recording-{calibratedIndex}",
+                    children=[dbc.Row(
+                            [
+                            dbc.Col(newGraphControls, width=3, style={"height": "100%"}), 
+                            dbc.Col(dcc.Graph(id ={'type': 'calibrated-nystagmus-plot', 'index':calibratedIndex}, style={'width':'140vh', 'height': '80vh'},
+                                              config={'edits': {'shapePosition': True}, 'displaylogo': False}),
+                                    width=9, style={"height": "100%"}),
+                            ],
+                            align='center',
+                            class_name='h-100'),
+                        ]
+                    )
+    
+    return newTab, recordingName
 
 tabs = dbc.Tabs(
     [
@@ -178,6 +226,7 @@ tabs = dbc.Tabs(
     id="tabs",
     active_tab="empty-tab",
 )
+
 
 app.layout = dbc.Container(
     [
