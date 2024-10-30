@@ -263,12 +263,11 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
           Input({'type': 'calibrated-trial-dropdown', 'index':MATCH}, 'value'),
           Input({'type': 'calibrated-eye-tracked', 'index':MATCH}, 'value'),
           Input({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
-          State('tabs', 'active_tab'),)
-def updateCalibratedGraph(inputTrial, eyeTracked, xyTracked, activeTab) -> go.FigureWidget:
-    print(callback_context.outputs_list)
-    recordingID = callback_context.outputs_list['id']
-    recordingIndex = recordingID['index']
-    print('recordingIndex: ', recordingIndex)   
+          State('tabs', 'active_tab'),
+          prevent_initial_call=True)
+def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: list[str], activeTab) -> go.FigureWidget:
+    recordingID: dict = callback_context.outputs_list['id']
+    recordingIndex: int = recordingID['index']
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
 
     relevantRecording = calibratedRecordingList[recordingIndex]
@@ -303,8 +302,7 @@ def updateCalibratedGraph(inputTrial, eyeTracked, xyTracked, activeTab) -> go.Fi
 @callback(Output({'type': 'calibrated-eye-tracked', 'index':MATCH}, 'value'),
           Output({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
          Input({'type': 'calibrated-trial-dropdown', 'index':MATCH}, 'value'),
-         State('tabs', 'active_tab'),
-         prevent_initial_call=True)
+         State('tabs', 'active_tab'))
 def updateCalibratedControls(inputTrial, activeTab) -> list:
 
     try:
@@ -336,7 +334,6 @@ def updateCalibratedControls(inputTrial, activeTab) -> list:
             eyesTracked.add('Right')
             xyTracked.add('Y')
 
-    print(f'Eyes Tracked: {eyesTracked}, XY Tracked: {xyTracked}')
 
     return list(eyesTracked), list(xyTracked)
 
@@ -550,26 +547,6 @@ def makeCalibrationDict(tickedDirections, plus10Values, minus10Values) -> dict:
         calibrationData[direction] = {'plus10Degs': plus10Values[index], 'minus10Degs': minus10Values[index]}
 
     return calibrationData
-
-#------- Logging --------#
-
-@callback(Output('none', 'children'),
-          Input ('tabs', 'active_tab'),
-          prevent_initial_call=True,
-          suppress_callback_exceptions=True)
-def logActiveTabChange(activeTab) -> None:
-    logger.info(f"Active Tab changed to {activeTab}")
-
-'''@callback(Output({'type':'none', 'index': MATCH}, 'children'),
-          Input({'type': 'calibrate-trigger', 'index': MATCH}, 'data'),
-          prevent_initial_call=True,
-          suppress_callback_exceptions=True)
-def logCalibration(calibrateTrigger) -> None:
-    logger.info("Calibration trigger triggered")'''
-
-
-
-
 
 
 #------- MAIN FUNCTION --------#
