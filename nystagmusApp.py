@@ -2,7 +2,7 @@ import numpy as np
 import logging, time, os, base64, tempfile, copy, json, webbrowser, re
 from pathlib import Path
 
-from dash import dcc, Input, Output, callback, State, callback_context, MATCH, ALL
+from dash import dcc, Input, Output, callback, State, callback_context, MATCH, ALL, no_update
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
@@ -25,8 +25,17 @@ calibratedRecordingList = []
 @callback(Output('upload-edf', 'children'),
         Input('upload-edf', 'loading_state'),
         prevent_initial_call=True)
-def updateSpinner(loading_state) -> dbc.Button:
-    print(f'Loading state: {loading_state}')
+def updateSpinner(loading_state:dict) -> dbc.Button:
+
+    '''
+    Updates to show spinner when file is loading, and disables button
+
+    Parameters: 
+        loading_state (dict): dictionary containing loading state of button
+
+    Returns:
+        dbc.Button: Button with spinner when loading, original button when not loading
+    '''
 
     if loading_state['is_loading']:
         newButton: dbc.Button = dbc.Button([dbc.Spinner(size = 'sm', spinner_style={'animation-duration':'1s'}), " Loading File..."],
@@ -40,8 +49,19 @@ def updateSpinner(loading_state) -> dbc.Button:
 
 
 
-'''Calls EDF_file_importer module to convert EDF file to numpy array'''
-def applyNumpyConversion(decodedContents, fileExtension) -> tuple[np.ndarray, Path]:
+def applyNumpyConversion(decodedContents:bytes, fileExtension:str) -> tuple[np.ndarray, Path]:
+    '''
+    Applies EDF file to numpy struct conversion using the EDF file importer module.
+    Temp file is made to store the edf file uploaded.
+
+    Parameters:
+        decodedContents (bytes): EDF file contents decoded from base64
+        fileExtension (str): file extension of the EDF file
+
+    Returns:
+        tuple[np.ndarray, Path]: numpy array of the EDF file, and the path of the temp file created
+    
+    '''
     tempFolderPath: Path = Path.cwd() / 'temp'
     try:
         tempFile: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
@@ -60,8 +80,21 @@ def applyNumpyConversion(decodedContents, fileExtension) -> tuple[np.ndarray, Pa
         logging.error(f"Error creating temp file: {str(e)}")
         raise IOError(f"Error creating temp file: {str(e)}")
     
-'''Using EDF file data, parse the recording into trials using the EDFTrialParser class'''
-def parseRecordingData(EDFfileData) -> EDFTrialParser:
+
+def parseRecordingData(EDFfileData: object) -> EDFTrialParser:
+    '''
+    Using EDF file data, parse the recording into trials using the EDFTrialParser class.
+
+    Parameters:
+        EDFfileData (EDF2Numpy): EDF2Numpy object of the EDF file, gets passed to the EDFTrialParser class
+        and split into individual trial objects.
+
+
+
+    Returns:
+        EDFTrialParser (EDFTrialParser) : EDFTrialParser object containing the parsed trials
+        from the EDF file
+    '''
     try:
         recordingParser: EDFTrialParser = EDFTrialParser(EDFfileData)
         recordingParser.extractAllTrials()
@@ -74,8 +107,6 @@ def parseRecordingData(EDFfileData) -> EDFTrialParser:
         raise ValueError(f"Error parsing EDF file: {str(e)}")
     
 
-'''Uploads EDF file, converts to numpy array, parses into trials, and stores trials in dcc.Store
-    Triggered on upload button press, returns a message to confirm file upload and parsing'''
 @callback(Output('upload-output', 'children'),
           Output('upload-trigger', 'data'),
         [Input('upload-edf', 'contents'),
@@ -89,6 +120,20 @@ def parseRecordingData(EDFfileData) -> EDFTrialParser:
         ]
     )
 def uploadFile(contents, filename, uploadTrigger) -> str:
+    '''
+    Uploads EDF file, converts to numpy array, parses into trials, and stores parsed edf file into recording list.
+    Triggered on upload button press, returns a message to confirm file upload and parsing.
+
+    Parameters:
+        contents: file contents from upload button.
+        filename (str) : name of the file uploaded
+
+
+    Returns:
+        outputMessage (str) : message confirming file upload and parsing
+        uploadTrigger (int) : incremented trigger to trigger tab generation
+    '''
+    
     try:
         fileNameIsolated, fileExtension = os.path.splitext(filename)
 
@@ -129,7 +174,7 @@ def uploadFile(contents, filename, uploadTrigger) -> str:
 '''Updates Eye(s) being shown depending on option selected in checkbox'''
 @callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
           Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
-          Input('tabs', 'active_tab'),
+          State('tabs', 'active_tab'),
           suppress_callback_exceptions=True)
 def updateEyeTracked(inputTrial, activeTab) -> list:
     recordingIndex = int(activeTab.split('-')[1]) - 1
@@ -214,6 +259,86 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
 
     return fig
 
+@callback(Output({'type': 'calibrated-nystagmus-plot', 'index':MATCH}, 'figure'),
+          Input({'type': 'calibrated-trial-dropdown', 'index':MATCH}, 'value'),
+          Input({'type': 'calibrated-eye-tracked', 'index':MATCH}, 'value'),
+          Input({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
+          State('tabs', 'active_tab'),)
+def updateCalibratedGraph(inputTrial, eyeTracked, xyTracked, activeTab) -> go.FigureWidget:
+    print(callback_context.outputs_list)
+    recordingID = callback_context.outputs_list['id']
+    recordingIndex = recordingID['index']
+    print('recordingIndex: ', recordingIndex)   
+    trialNumber: int = int(inputTrial.split(" ")[1]) - 1
+
+    relevantRecording = calibratedRecordingList[recordingIndex]
+    relevantCalibrationData = relevantRecording[2]
+    relevantTrial = relevantRecording[1][trialNumber]
+
+    fig = go.FigureWidget()
+    
+
+    if 'XLeft' in relevantCalibrationData.keys() and 'X' in xyTracked and 'Left' in eyeTracked:
+        xLeftData = relevantTrial['posXLeft']
+        fig.add_trace(go.Scatter(x=xLeftData.index,y=xLeftData,
+                                  mode='lines', name='X Left Eye', line = dict(color='#636EFA')))
+    if 'XRight' in relevantCalibrationData.keys() and 'X' in xyTracked and 'Right' in eyeTracked:
+        xRightData = relevantTrial['posXRight']
+        fig.add_trace(go.Scatter(x=xRightData.index,y=xRightData,
+                                  mode='lines', name='X Right Eye', line = dict(color='#00CC96')))
+
+    if 'YLeft' in relevantCalibrationData.keys() and 'Y' in xyTracked and 'Left' in eyeTracked:
+        yLeftData = relevantTrial['posYLeft']
+        fig.add_trace(go.Scatter(x=yLeftData.index,y=yLeftData,
+                                  mode='lines', name='Y Left Eye', line = dict(color='#EF553B')))
+
+    if 'YRight' in relevantCalibrationData.keys() and 'Y' in xyTracked and 'Right' in eyeTracked:    
+        yRightData = relevantTrial['posYRight']
+        fig.add_trace(go.Scatter(x=yRightData.index,y=yRightData,
+                                  mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+
+    return fig
+
+
+@callback(Output({'type': 'calibrated-eye-tracked', 'index':MATCH}, 'value'),
+          Output({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
+         Input({'type': 'calibrated-trial-dropdown', 'index':MATCH}, 'value'),
+         State('tabs', 'active_tab'),
+         prevent_initial_call=True)
+def updateCalibratedControls(inputTrial, activeTab) -> list:
+
+    try:
+        recordingIndex = int(activeTab.split('-')[1])
+    
+    except Exception as e:
+        logger.error(f"Error extracting recording index from active tab: {str(e)}")
+        return ['Left', 'Right'], ['X', 'Y']
+    
+    relevantRecording = calibratedRecordingList[recordingIndex]
+    relevantCalibrationData = relevantRecording[2]
+    eyesTracked = set()
+    xyTracked = set()
+
+    for key in relevantCalibrationData.keys():
+        if key == 'XLeft': 
+            eyesTracked.add('Left')
+            xyTracked.add('X')
+
+        elif key == 'YLeft':
+            eyesTracked.add('Left')
+            xyTracked.add('Y')
+        
+        elif key == 'XRight':
+            eyesTracked.add('Right')
+            xyTracked.add('X')
+        
+        elif key == 'YRight':
+            eyesTracked.add('Right')
+            xyTracked.add('Y')
+
+    print(f'Eyes Tracked: {eyesTracked}, XY Tracked: {xyTracked}')
+
+    return list(eyesTracked), list(xyTracked)
 
 
 #------- TAB CREATION --------#
@@ -221,9 +346,8 @@ def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, 
 @callback(Output('tabs', 'children', allow_duplicate=True),
           Output('tabs', 'active_tab', allow_duplicate=True),
           Input('upload-trigger', 'data'),
-        [State('tabs', 'children')],
-        prevent_initial_call=True,
-        allow_duplicate=True)    
+          State('tabs', 'children'),
+          prevent_initial_call=True)    
 def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     recordingCount:int = len(recordingList)
     if recordingCount == 0:
@@ -232,7 +356,6 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     newTabs = copy.copy(currentTabs)
     newRecordingIndex:int = recordingCount - 1
     trialCount:int = len(recordingList[newRecordingIndex][1])
-    print(f'new Trial Count: {trialCount}')
     newGraphControls = createGraphControls(newRecordingIndex, trialCount)
     newTabID = f"recording-{newRecordingIndex}"
 
@@ -257,16 +380,15 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
     
 @callback(Output('tabs', 'children'),
           Output('tabs', 'active_tab'),
-          Input({'type':'calibrate-trigger', 'index': ALL}, 'data'),
+          Input('calibrate-trigger', 'data'),
           State('tabs', 'children'),
           State('tabs', 'active_tab'),
-        prevent_initial_call=True)
+          prevent_initial_call=True)
 def addNewCalibratedTab(calibrateTrigger, currentTabs, activeTab) -> tuple:
     calibratedRecordingCount = len(calibratedRecordingList)
-    if calibratedRecordingCount == 0:
+
+    if calibratedRecordingCount == 0 or calibrateTrigger == 0:
         return currentTabs, activeTab
-    
-    print(calibratedRecordingList[0][0])
     
     newTabs = copy.copy(currentTabs)
     newCalibratedIndex = calibratedRecordingCount - 1
@@ -371,7 +493,7 @@ def updateRemapLine(plus10Value, minus10Value, direction, eyeTracked, endTime) -
     return lines
 
 #------- CALIBRATION --------#
-@callback(Output({'type':'calibrate-trigger', 'index':MATCH}, 'data'),
+@callback(Output({'type':'calibrate-trigger-indexed', 'index':MATCH}, 'data'),
         Input({'type': 'calibrate-button', 'index':MATCH}, 'n_clicks'),
         State({'type':'remapping-check', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'value'),
         State({'type': 'remapping-plus10degs-value', 'eye': ALL, 'direction': ALL, 'index': MATCH}, 'data'),
@@ -392,12 +514,20 @@ def calibrateData(buttonClicks, remappingChecks, plus10Values, minus10Values) ->
     calibratedRecording = applyRecordingLinearRegression(relevantRecordingTrials, calibrationData)
 
     calibratedRecordingName = f'{relevantRecordingName} - Calibrated'
-    calibratedRecordingList.append([calibratedRecordingName, calibratedRecording])
-    #print('\n --------------------new calibrated recording--------------------- \n')
-    #print(calibrationData)
-    #print(calibratedRecordingList[0])
+    calibratedRecordingList.append([calibratedRecordingName, calibratedRecording, calibrationData])
 
     return buttonClicks
+
+@callback(Output('calibrate-trigger', 'data'),
+          Input({'type': 'calibrate-trigger-indexed', 'index': ALL}, 'data'),
+          State('calibrate-trigger', 'data'),
+          prevent_initial_call=True)
+def calibrationTriggered(calibrateTriggerIndexed, calibrateTrigger) -> int:
+    if all(i > 0 for i in calibrateTriggerIndexed):
+        return (calibrateTrigger + 1)
+
+    return no_update
+
 
 
 def getTickedRemapDirections(statesList) -> list:
@@ -420,6 +550,25 @@ def makeCalibrationDict(tickedDirections, plus10Values, minus10Values) -> dict:
         calibrationData[direction] = {'plus10Degs': plus10Values[index], 'minus10Degs': minus10Values[index]}
 
     return calibrationData
+
+#------- Logging --------#
+
+@callback(Output('none', 'children'),
+          Input ('tabs', 'active_tab'),
+          prevent_initial_call=True,
+          suppress_callback_exceptions=True)
+def logActiveTabChange(activeTab) -> None:
+    logger.info(f"Active Tab changed to {activeTab}")
+
+'''@callback(Output({'type':'none', 'index': MATCH}, 'children'),
+          Input({'type': 'calibrate-trigger', 'index': MATCH}, 'data'),
+          prevent_initial_call=True,
+          suppress_callback_exceptions=True)
+def logCalibration(calibrateTrigger) -> None:
+    logger.info("Calibration trigger triggered")'''
+
+
+
 
 
 

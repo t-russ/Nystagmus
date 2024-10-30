@@ -7,7 +7,7 @@ def createGraphControls(recordingIndex, trialCount):
 
     new_graph_controls = dbc.Card(
         [   
-            dcc.Store(id={'type':'calibrate-trigger', 'index':recordingIndex}, data=0),
+            dcc.Store(id={'type':'calibrate-trigger-indexed', 'index':recordingIndex}, data=0),
             html.Div([
                 html.Label('Trial:'),
                 dcc.Dropdown(id={'type':'trial-dropdown', 'index': recordingIndex}, options=["Trial " + str(i + 1) for i in range(trialCount)], value="Trial 1",
@@ -195,14 +195,15 @@ def createCalibratedGraphControls(calibratedIndex, trialCount):
     return controls
 
 def makeNewCalibratedTab(relevantRecording, calibratedIndex, trialCount):
-    print(f'relevantRecording[0]:{relevantRecording[0]}')
-    recordingName = f'{relevantRecording[0]} - Calibrated'
+    recordingName = f'{relevantRecording[0]}'
     newGraphControls = createCalibratedGraphControls(calibratedIndex, trialCount)
-    newTab = dbc.Tab(label=recordingName, tab_id=f"calibrated-recording-{calibratedIndex}",
+    newTabID = f"calibrated-{calibratedIndex}"
+    newTab = dbc.Tab(label=recordingName, tab_id=newTabID,
                     children=[dbc.Row(
                             [
                             dbc.Col(newGraphControls, width=3, style={"height": "100%"}), 
-                            dbc.Col(dcc.Graph(id ={'type': 'calibrated-nystagmus-plot', 'index':calibratedIndex}, style={'width':'140vh', 'height': '80vh'},
+                            dbc.Col(dcc.Graph(id ={'type': 'calibrated-nystagmus-plot', 'index':calibratedIndex},
+                                              style={'width':'140vh', 'height': '80vh'},
                                               config={'edits': {'shapePosition': True}, 'displaylogo': False}),
                                     width=9, style={"height": "100%"}),
                             ],
@@ -211,7 +212,7 @@ def makeNewCalibratedTab(relevantRecording, calibratedIndex, trialCount):
                         ]
                     )
     
-    return newTab, recordingName
+    return newTab, newTabID
 
 tabs = dbc.Tabs(
     [
@@ -231,6 +232,7 @@ tabs = dbc.Tabs(
 app.layout = dbc.Container(
     [
         dcc.Store(id='upload-trigger', data=0),
+        dcc.Store(id='calibrate-trigger', data=0),
         html.H1("Nystagmus Analyser"),
         html.Hr(),
         dbc.Row([
@@ -238,9 +240,13 @@ app.layout = dbc.Container(
         ],
         class_name='h-10',
         ),
-        dbc.Row([
-            tabs,
-        ]),
+        html.Div(
+            children=[
+                dbc.Row([
+                    tabs,
+                ]),
+            ]
+        )
     ],
     style={"height": "100vh"}, fluid=True,
 )

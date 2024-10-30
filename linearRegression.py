@@ -3,19 +3,6 @@ from EDFTrialParsing import EDFTrialParser
 import numpy as np
 from plotly import graph_objects as go
 
-'''for testing purposes'''
-with open("C:\\Users\\tomru\\Documents\\Nystagmus Analyser\\EDF_data\\br_whole_file.npy", 'rb') as f:
-    BREDFfileData = np.load(f, allow_pickle=True)
-
-
-brRecordingObj = EDFTrialParser(BREDFfileData)
-brRecordingObj.extractAllTrials()
-
-dataTest = brRecordingObj.trials[0].sampleData
-
-testDict = {'XRight':{'plus10Degs': -6000, 'minus10Degs': -2000}, 'YRight':{'plus10Degs': -6000, 'minus10Degs': -2000}}
-
-
 def linearRegression(data: pd.Series, plus10Degs:int, minus10Degs:int) -> pd.Series:
     #apply linear regression to the column
     slope = (-10-10)/(plus10Degs - minus10Degs)
