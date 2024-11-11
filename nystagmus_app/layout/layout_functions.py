@@ -1,7 +1,5 @@
+from dash import dcc, html
 import dash_bootstrap_components as dbc
-from dash import Dash, dcc, html
-
-app = Dash(external_stylesheets=[dbc.themes.COSMO])
 
 def createGraphControls(recordingIndex, trialCount):
 
@@ -159,10 +157,6 @@ def createGraphControls(recordingIndex, trialCount):
    
     return new_graph_controls
 
-upload_button = html.Div([
-    dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
-    html.Div(id='upload-output', style={"margin-top": "10px" }, ),
-])
 
 def createCalibratedGraphControls(calibratedIndex, trialCount):
     controls = dbc.Card([
@@ -211,42 +205,4 @@ def makeNewCalibratedTab(relevantRecording, calibratedIndex, trialCount):
                             class_name='h-100'),
                         ]
                     )
-    
     return newTab, newTabID
-
-tabs = dbc.Tabs(
-    [
-        dbc.Tab(label="No Data Uploaded", tab_id="empty-tab",
-                children=[dbc.Card(dbc.CardBody([
-                        html.H5("No data has been uploaded. Please upload a file."),
-                        html.P("Once a file has been uploaded, it will appear here.")]
-                        ))
-                    ],
-                ),
-    ],
-    id="tabs",
-    active_tab="empty-tab",
-)
-
-
-app.layout = dbc.Container(
-    [
-        dcc.Store(id='upload-trigger', data=0),
-        dcc.Store(id='calibrate-trigger', data=0),
-        html.H1("Nystagmus Analyser"),
-        html.Hr(),
-        dbc.Row([
-        upload_button,
-        ],
-        class_name='h-10',
-        ),
-        html.Div(
-            children=[
-                dbc.Row([
-                    tabs,
-                ]),
-            ]
-        )
-    ],
-    style={"height": "100vh"}, fluid=True,
-)

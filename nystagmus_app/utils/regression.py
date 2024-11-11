@@ -1,5 +1,5 @@
 import pandas as pd
-from EDFTrialParsing import EDFTrialParser
+from nystagmus_app.utils.trial_parsing import EDFTrialParser
 import numpy as np
 from plotly import graph_objects as go
 
@@ -45,4 +45,3 @@ def applyRecordingLinearRegression(recording:list, calibrationData: dict) -> lis
         calibratedTrialsSampleData.append(calibratedTrial)
 
     return calibratedTrialsSampleData
-

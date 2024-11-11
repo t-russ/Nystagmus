@@ -1,6 +1,6 @@
+import pandas as pd
 import numpy as np
 import logging
-import pandas as pd
 
 #setup logging
 logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
