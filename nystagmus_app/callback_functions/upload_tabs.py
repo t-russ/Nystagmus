@@ -164,13 +164,29 @@ def uploadFile(contents, filename:str, uploadTrigger:int) -> str:
 
 
 #------- TAB CREATION --------#
-'''Creates new tab for a file being uploaded'''
+
 @app.callback(Output('tabs', 'children', allow_duplicate=True),
           Output('tabs', 'active_tab', allow_duplicate=True),
           Input('upload-trigger', 'data'),
           State('tabs', 'children'),
           prevent_initial_call=True)    
 def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
+    '''
+    Creates a new tab for each edf file uploaded.
+    Triggers upon upload and processing of a file. 
+    upload_trigger is incremented after each completion of the uploadFile function.
+    Returns the tab list with the new tab appended.
+
+    Parameters:
+        uploadCount (int) : Upload trigger, incremented after each file upload.
+                            Used to trigger tab generation callback.
+        currentTabs (list) : list of current tab components.
+
+    Returns:
+        (str) : active tab to be updated to ensure correct tab is shown.
+        (list) : Updated list of tabs with new tab appended.
+    '''
+        
     recordingCount:int = len(globals.recordingList)
     if recordingCount == 0:
         return currentTabs, "empty-tab"
@@ -207,6 +223,21 @@ def createNewTab(uploadCount, currentTabs) -> dbc.Tabs:
           State('tabs', 'active_tab'),
           prevent_initial_call=True)
 def addNewCalibratedTab(calibrateTrigger, currentTabs, activeTab) -> tuple:
+    '''
+    Creates a new tab for each calibration.
+    Triggers upon regression calculations of a file. 
+    Returns the tab list with the new tab appended.
+
+    Parameters:
+        calibrateTrigger (int) : triggers the callback function. Incremented after each calibration.
+        currentTabs (list) : list of current tab components.
+        activeTab (str) : active tab to be returned if an improper callback is executed.
+
+    Returns:
+        (list) : Updated list of tabs with new tab appended.
+        (str) : active tab to be updated to ensure correct tab is shown.
+    '''
+
     calibratedRecordingCount = len(globals.calibratedRecordingList)
 
     if calibratedRecordingCount == 0 or calibrateTrigger == 0:

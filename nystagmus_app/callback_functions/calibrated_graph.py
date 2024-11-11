@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
           Input({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
           State('tabs', 'active_tab'),
           prevent_initial_call=True)
-def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: list[str], activeTab) -> go.FigureWidget:
+def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: list[str], activeTab:str) -> go.FigureWidget:
     recordingID: dict = callback_context.outputs_list['id']
     recordingIndex: int = recordingID['index']
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1

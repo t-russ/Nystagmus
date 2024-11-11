@@ -44,11 +44,21 @@ def updateEyeTracked(inputTrial:str, activeTab:str) -> list[str]:
         State({'type': 'remapping-plus10degs-value', 'eye': ALL, 'direction': ALL,  'index': MATCH}, 'data'),
         State({'type': 'remapping-minus10degs-value', 'eye': ALL, 'direction': ALL,  'index': MATCH}, 'data'),  
         )
-def updateGraph(inputTrial, eyeTracked, xyTracked, remappingCheck, plus10Value, minus10Value) -> go.FigureWidget:
+def updateGraph(inputTrial:str, eyeTracked:list[str], xyTracked:list[str], remappingCheck:list[bool],
+                 plus10Value:list[float], minus10Value:list[float]) -> go.FigureWidget:
     '''
+    Updates the graph based on the possible filters selected. 
+    This includes controls for eye being tracked, direction being tracked, remapping checks - for calibration lines.
     Parameters:
+        inputTrial (str): trial selected in the dropdown
+        eyeTracked (list[str]): list of eyes being tracked
+        xyTracked (list[str]): list of directions being tracked
+        remappingCheck (list[bool]): list of remapping checks
+        plus10Value (list[float]): list of plus 10 degrees values
+        minus10Value (list[float]): list of minus 10 degrees values
 
     Returns:
+        go.FigureWidget: updated graph plot depending on the filters selected
     '''
     logger.debug("Updating Graph")
     #obtain the index of the graph that was triggered - this is needed for pattern matching callbacks
