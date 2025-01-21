@@ -5,8 +5,10 @@ import os
 import numpy as np
 import tempfile
 import copy
+import gc
 from pathlib import Path
 import dash_bootstrap_components as dbc
+
 
 from nystagmus_app.app import app
 from nystagmus_app.EDF_file_importer.EyeLinkDataImporter import EDFToNumpy
@@ -42,13 +44,59 @@ def updateSpinner(loading_state:dict) -> dbc.Button:
         originalButton: dbc.Button = dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2")
         return originalButton
 
+#maybe make copy of temp file and open that
+def createTempFile(decodedContents:bytes, fileExtension:str) -> Path:
+    '''
+    Creates a temp file to store the uploaded EDF file contents.
+
+    Parameters:
+        decodedContents (bytes): EDF file contents decoded from base64
+        fileExtension (str): file extension of the EDF file
+
+    Returns: Path: path of the temp file created
+    '''
+    tempFolderPath: Path = Path.cwd() / 'temp'
+    try:
+        tempFile: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
+        tempFilePath: Path = tempFolderPath / tempFile.name
+        tempFile.write(decodedContents)
+        tempFile.flush()
+        tempFile.close()
+
+
+        logging.info(f"Temp EDF file created at {str(tempFilePath)}")
+        return tempFilePath
+
+    except Exception as e:
+        logging.error(f"Error creating temp file: {str(e)}")
+        raise IOError(f"Error creating temp file: {str(e)}")
+    
+
+def tempDirCleanup() -> None:
+    '''
+    Initialise the temp directory and clean up temp files.
+    Called at start of program.
+    '''
+
+    tempFolderPath: Path = Path.cwd() / 'temp'
+    try:
+        if tempFolderPath.exists():
+            for file in tempFolderPath.iterdir():
+                if file.is_file():
+                    os.unlink(file)
+    except Exception as e:
+        logging.error(f"Error cleaning up temp folder: {str(e)}")
+            
+    logging.info("Temp folder cleaned up")
+
+    tempFolderPath.mkdir(exist_ok=True)
 
 
 
 def applyNumpyConversion(decodedContents:bytes, fileExtension:str) -> tuple[np.ndarray, Path]:
     '''
     Applies EDF file to numpy struct conversion using the EDF file importer module.
-    Temp file is made to store the edf file uploaded.
+    Temp file is made to store the edf file uploaded since the EDF file importer requires a file path.
 
     Parameters:
         decodedContents (bytes): EDF file contents decoded from base64
@@ -58,23 +106,22 @@ def applyNumpyConversion(decodedContents:bytes, fileExtension:str) -> tuple[np.n
         tuple[np.ndarray, Path]: numpy array of the EDF file, and the path of the temp file created
     
     '''
-    tempFolderPath: Path = Path.cwd() / 'temp'
-    try:
-        tempFile: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, suffix=fileExtension, dir=tempFolderPath)
-        tempFilePath = tempFolderPath / tempFile.name
-        tempFile.write(decodedContents)
 
-        logging.info(f"Temp EDF file created at {str(tempFilePath)}")
+    tempFilePath: Path = createTempFile(decodedContents, fileExtension)
+
+    try:
         EDFfileData: np.ndarray = EDFToNumpy(tempFilePath, 'gaze_data_type = 0')
         logging.info("EDF file converted to numpy")
 
-        tempFile.close()
-
-        return EDFfileData, tempFilePath
 
     except Exception as e:
-        logging.error(f"Error creating temp file: {str(e)}")
-        raise IOError(f"Error creating temp file: {str(e)}")
+        logging.error(f"Error converting EDF file to numpy: {str(e)}")
+        raise ValueError(f"Error converting EDF file to numpy: {str(e)}")
+
+    return EDFfileData, tempFilePath
+
+    
+    
     
 
 def parseRecordingData(EDFfileData: object) -> EDFTrialParser:
@@ -95,6 +142,7 @@ def parseRecordingData(EDFfileData: object) -> EDFTrialParser:
         recordingParser.extractAllTrials()
         trialCount: int = recordingParser.trialCount
         logging.info(f"EDF file parsed into {trialCount} trials")
+
         return recordingParser
 
     except Exception as e:
@@ -152,13 +200,14 @@ def uploadFile(contents, filename:str, uploadTrigger:int) -> str:
         return "Error decoding file, please check the logs for more information.", uploadTrigger
 
     EDFfileData, tempFilePath = applyNumpyConversion(decoded, fileExtension)
+
+
     recordingParser = parseRecordingData(EDFfileData)
     recordingTrials = recordingParser.trials
     filenameAndTrials = [fileNameIsolated, recordingTrials]
     globals.recordingList.append(filenameAndTrials)
     outputMessage = f"File {filename} uploaded and parsed into {len(recordingTrials)} trials."
     uploadTrigger += 1
-    #os.remove(tempFilePath)
 
     return outputMessage, uploadTrigger
 

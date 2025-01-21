@@ -27,8 +27,8 @@ This code illusrates how to utilize the functions of the EDFACCESSwraper.py to u
 To utilize the code one must first install the EyeLink Developers Kit:https://www.sr-research.com/support/thread-13.html and will also need to install numpy for you python environment: https://numpy.org/install/
 '''
 import os, sys
-from EDF_file_importer.EDF2numpy import EDF2numpy
-#from EDF2numpy import EDF2numpy
+from nystagmus_app.EDF_file_importer.EDF2numpy import EDF2numpy
+
 import numpy as np
 import logging
 

@@ -8,6 +8,7 @@ from nystagmus_app.callback_functions.calibrated_graph import *
 #------- MAIN FUNCTION --------#
 '''Launches Dash app'''
 if __name__ == '__main__':
+    tempDirCleanup()
     port = 8050
     webbrowser.open_new(f'http://127.0.0.1:{port}')
     app.run(debug=True, port=port, use_reloader=False)

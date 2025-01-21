@@ -9,6 +9,8 @@ logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asc
 logger = logging.getLogger(__name__)
 
 
+#@app.callback(Output({'type': 'calibration-x-left'}))
+
 @app.callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
           Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
           State('tabs', 'active_tab'),

@@ -14,6 +14,19 @@ logger = logging.getLogger(__name__)
           State('tabs', 'active_tab'),
           prevent_initial_call=True)
 def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: list[str], activeTab:str) -> go.FigureWidget:
+    '''
+    Updates the graph based on the possible filters selected.
+    Parameters: 
+        inputTrial (str): trial selected in the dropdown
+        eyeTracked (list[str]): list of eyes being tracked
+        xyTracked (list[str]): list of directions being tracked
+        activeTab (str): active tab selected
+
+    Returns:
+        go.FigureWidget: updated figure to be displayed
+   
+    '''
+
     recordingID: dict = callback_context.outputs_list['id']
     recordingIndex: int = recordingID['index']
     trialNumber: int = int(inputTrial.split(" ")[1]) - 1
@@ -24,7 +37,7 @@ def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: lis
 
     fig = go.FigureWidget()
     
-
+    #plot lines on graph based on filters selected and calibration data available
     if 'XLeft' in relevantCalibrationData.keys() and 'X' in xyTracked and 'Left' in eyeTracked:
         xLeftData = relevantTrial['posXLeft']
         fig.add_trace(go.Scatter(x=xLeftData.index,y=xLeftData,
@@ -51,7 +64,18 @@ def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: lis
           Output({'type': 'calibrated-xy-tracked', 'index':MATCH}, 'value'),
          Input({'type': 'calibrated-trial-dropdown', 'index':MATCH}, 'value'),
          State('tabs', 'active_tab'))
-def updateCalibratedControls(inputTrial, activeTab) -> list:
+def updateCalibratedControls(inputTrial:str, activeTab:str) -> list:
+
+    '''
+    Updates the eye and xy tracked controls for the calibrated graph - based on the active tab selected.
+
+    Parameters:
+        inputTrial (str): trial selected in the dropdown
+        activeTab (str): active tab selected
+
+    Returns:
+        list: list of eyes being tracked, list of directions being tracked
+    '''
 
     try:
         recordingIndex = int(activeTab.split('-')[1])

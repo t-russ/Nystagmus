@@ -29,7 +29,7 @@ To utilize the code one must first install the EyeLink Developers Kit:https://ww
 '''
 
 import os, sys
-from EDF_file_importer.EDFACCESSwrapper import EDFACCESSwrapper
+from nystagmus_app.EDF_file_importer.EDFACCESSwrapper import EDFACCESSwrapper
 #from EDFACCESSwrapper import EDFACCESSwrapper
 import struct
 try:
