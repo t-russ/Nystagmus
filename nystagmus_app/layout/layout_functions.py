@@ -143,7 +143,7 @@ def createGraphControls(recordingIndex, trialCount):
                 ),
 
                 ],      
-                style= {"margin-bottom": 10, "margin-top": 10, "text-align": "center"}, id={'type': 'calibration-input-div', 'eye':'right', 'direction':'y', 'index': recordingIndex},
+                style= {"margin-bottom": 10, "margin-top": 10, "text-align": "center"}, id={'type': 'calibration-y-right','index': recordingIndex},
             ),
 
             html.Div([

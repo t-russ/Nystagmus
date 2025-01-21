@@ -9,7 +9,40 @@ logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asc
 logger = logging.getLogger(__name__)
 
 
-#@app.callback(Output({'type': 'calibration-x-left'}))
+@app.callback(Output({'type': 'calibration-x-left', 'index': MATCH}, 'style'),
+              Output({'type': 'calibration-x-right', 'index': MATCH}, 'style'),
+              Output({'type': 'calibration-y-left', 'index': MATCH}, 'style'),
+              Output({'type': 'calibration-y-right', 'index': MATCH}, 'style'),
+              Input({'type': 'eye-tracked', 'index': MATCH}, 'value'),
+              Input({'type': 'xy-tracked', 'index': MATCH}, 'value'))
+def displayCalibrationDivs(eyeTracked, xyTracked) -> tuple[dict, dict, dict, dict]:
+    '''
+    Displays calibration divs based on the eye and direction being tracked.
+
+    Parameters:
+        eyeTracked (list[str]): list of eyes being tracked
+        xyTracked (list[str]): list of directions being tracked
+
+    Returns:
+        tuple[dict, dict, dict, dict]: dictionary containing the style of the calibration divs
+    '''
+    logger.debug("Displaying Calibration Divs")
+    defaultStyle = {"margin-bottom": 10, "margin-top": 10, "text-align": "center", "display": "block"}
+    xLeftStyle = {'display': 'none'}
+    xRightStyle = {'display': 'none'}
+    yLeftStyle = {'display': 'none'}
+    yRightStyle = {'display': 'none'}
+
+    if 'Left' in eyeTracked and 'X' in xyTracked:
+        xLeftStyle = defaultStyle
+    if 'Right' in eyeTracked and 'X' in xyTracked:
+        xRightStyle = defaultStyle
+    if 'Left' in eyeTracked and 'Y' in xyTracked:
+        yLeftStyle = defaultStyle
+    if 'Right' in eyeTracked and 'Y' in xyTracked:
+        yRightStyle = defaultStyle
+
+    return xLeftStyle, xRightStyle, yLeftStyle, yRightStyle
 
 @app.callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
           Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
