@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 import nystagmus_app.layout.app_components as app_components
 
 app = Dash(external_stylesheets=[dbc.themes.COSMO])
+app.title = "Nystagmus Analyser"
 
 app.layout = dbc.Container(
     [
