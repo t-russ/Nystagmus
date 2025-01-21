@@ -76,6 +76,8 @@ def tempDirCleanup() -> None:
     '''
     Initialise the temp directory and clean up temp files.
     Called at start of program.
+    This is a workaround as temp file cannot be deleted after numpy conversion due to 
+    data importer relying on the file path.
     '''
 
     tempFolderPath: Path = Path.cwd() / 'temp'
