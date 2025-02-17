@@ -11,7 +11,15 @@ from nystagmus_app.utils.regression import applyRecordingLinearRegression
     Input({'type': 'remapping-check', 'eye':MATCH, 'direction':MATCH, 'index': MATCH}, 'value'),
     prevent_initial_call=True
 )
-def enable_remapping_input(remappingCheck):
+def enable_remapping_input(remappingCheck: bool) -> tuple:
+    '''
+    Enables/disables the remapping input based on the checkbox value.
+
+    Parameters: remappingCheck (bool): value of the checkbox
+
+    Returns: tuple: (bool, bool) - values to enable/disable the input
+
+    '''
     return not remappingCheck, not remappingCheck
 
 
@@ -24,6 +32,18 @@ def enable_remapping_input(remappingCheck):
           State({'type': 'nystagmus-plot', 'index': MATCH}, 'figure'),
           prevent_initial_call=True)
 def updateRemapLineValue(relayoutData, plus10Value, minus10Value, fig) -> tuple:
+    '''
+    Updates the value of the remapping lines when they are moved on the nystagmus plot.
+
+    Parameters:
+        relayoutData (dict): data from the plot
+        plus10Value (float): value of the plus 10 degrees line
+        minus10Value (float): value of the minus 10 degrees line
+        fig (go.FigureWidget): the figure object
+
+    Returns:
+        tuple: (float, float) - updated values of the plus 10 degrees and minus 10 degrees lines.
+    '''
 
     shapeIndex = getShapeIndex(relayoutData)
 

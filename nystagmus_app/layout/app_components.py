@@ -1,6 +1,9 @@
 import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html
 
+dcc.Store(id='upload-trigger', data=0),
+dcc.Store(id='calibrate-trigger', data=0),
+
 upload_button = html.Div([
     dcc.Upload([dbc.Button("Upload EDF", id="upload-edf-button", color="primary", className="mr-2",)], id = 'upload-edf',  accept=".edf"),
     html.Div(id='upload-output', style={"margin-top": "10px" }, ),
@@ -19,5 +22,7 @@ tabs = dbc.Tabs(
     id="tabs",
     active_tab="empty-tab",
 )
+
+
 
 
