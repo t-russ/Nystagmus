@@ -27,7 +27,6 @@ def serve_layout():
     ))
 
 def get_tabs():
-    print(app_components.tabs)
     return app_components.tabs
 
 

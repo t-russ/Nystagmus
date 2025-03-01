@@ -46,8 +46,7 @@ def displayCalibrationDivs(eyeTracked, xyTracked) -> tuple[dict, dict, dict, dic
 
 @app.callback(Output({'type':'eye-tracked', 'index': MATCH}, 'value'),
           Input({'type':'trial-dropdown', 'index': MATCH}, 'value'),
-          State('tabs', 'active_tab'),
-          suppress_callback_exceptions=True)
+          State('tabs', 'active_tab'),)
 def updateEyeTracked(inputTrial:str, activeTab:str) -> list[str]:
     '''
     Updates the eye being shown on the graph based on the trial selected in the dropdown.

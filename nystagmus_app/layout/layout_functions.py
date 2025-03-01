@@ -152,7 +152,7 @@ def createGraphControls(recordingIndex, trialCount):
             id={'type': 'calibrate-button-div', 'index': recordingIndex}, className="d-flex justify-content-center", style={"margin-top": "10px"},
             ),
         ],
-        body=True,
+        body=True, style={"height": "100%"},
         )
    
     return new_graph_controls
@@ -184,6 +184,26 @@ def createCalibratedGraphControls(calibratedIndex, trialCount):
             ],
             style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
         ),
+        
+        dbc.Button("Calculate Amplitude", id={'type': 'calculate-velocity-amplitude', 'index': calibratedIndex}, color="primary",
+                  className="d-flex justify-content-center mr-2", style={"margin-top": "10px"},
+        ),
+        
+        html.Div("Fast Phase Amplitude: ", id={'type': 'calibrated-amplitude', 'index': calibratedIndex},
+                 style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
+
+        ),
+        
+        dbc.Button("Calculate Velocity", id={'type': 'calculate-velocity-button', 'index': calibratedIndex}, color="primary",
+                  className="d-flex justify-content-center mr-2", style={"margin-top": "10px"},
+        ),
+        
+        html.Div("Fast Phase Velocity: ", id={'type': 'calibrated-frequency', 'index': calibratedIndex},
+                 style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
+        ),
+        
+        #add button and text to seperate div, put text in html.P
+
     ])
 
     return controls
