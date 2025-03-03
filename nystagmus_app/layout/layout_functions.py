@@ -170,7 +170,7 @@ def createCalibratedGraphControls(calibratedIndex, trialCount):
 
         html.Div([
             html.Label('Eye Tracked:'),
-            dbc.Checklist(id ={'type':'calibrated-eye-tracked', 'index': calibratedIndex}, options=['Left', 'Right'],inline=True, 
+            dbc.Checklist(id ={'type':'calibrated-eye-tracked', 'index': calibratedIndex}, options=['Left', 'Right'], inline=True, 
                         inputStyle={"margin-right": 5}),
             ],
             style= {"margin-bottom": 10, "margin-top":10, "text-align": "center",},
@@ -185,26 +185,35 @@ def createCalibratedGraphControls(calibratedIndex, trialCount):
             style= {"margin-bottom": 10, "margin-top":10, "text-align": "center"}
         ),
         
-        dbc.Button("Calculate Amplitude", id={'type': 'calculate-velocity-amplitude', 'index': calibratedIndex}, color="primary",
-                  className="d-flex justify-content-center mr-2", style={"margin-top": "10px"},
-        ),
-        
-        html.Div("Fast Phase Amplitude: ", id={'type': 'calibrated-amplitude', 'index': calibratedIndex},
-                 style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
+        html.Div([
+            dbc.Button("Calculate Amplitude", id={'type': 'calculate-velocity-amplitude', 'index': calibratedIndex}, color="primary",
+                    className="mr-2", style={"margin-top": "10px"},
+                    ),
+            
+            html.Div("Fast Phase Amplitude: ", id={'type': 'calibrated-amplitude', 'index': calibratedIndex},
+                    style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
 
+                    ),
+                ],
+            style= {"margin-bottom": 10, "margin-top":30, "text-align": "center"},
         ),
         
-        dbc.Button("Calculate Velocity", id={'type': 'calculate-velocity-button', 'index': calibratedIndex}, color="primary",
-                  className="d-flex justify-content-center mr-2", style={"margin-top": "10px"},
-        ),
+                
+        html.Div([
+            dbc.Button("Calculate Velocity", id={'type': 'calculate-velocity-button', 'index': calibratedIndex}, color="primary",
+                    className="mr-2", style={"margin-top": "10px"},
+                      ),
+            
+            html.Div("Fast Phase Velocity: ", id={'type': 'calibrated-frequency', 'index': calibratedIndex},
+                    style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
+                    ),
+            ],
+                
+                style= {"margin-bottom": 10, "margin-top":30, "text-align": "center"},
+            ),
         
-        html.Div("Fast Phase Velocity: ", id={'type': 'calibrated-frequency', 'index': calibratedIndex},
-                 style={"white-space": "pre", "margin-bottom": 10, "margin-top":10, "text-align": "center",},
-        ),
-        
-        #add button and text to seperate div, put text in html.P
 
-    ])
+    ], body=True, style={"height": "100%"})
 
     return controls
 

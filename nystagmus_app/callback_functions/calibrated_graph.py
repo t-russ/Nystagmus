@@ -108,3 +108,10 @@ def updateCalibratedControls(inputTrial:str, activeTab:str) -> list:
 
 
     return list(eyesTracked), list(xyTracked)
+
+
+
+# take data from relayout when axis is changed and update a dcc.Store with the new axis values
+#then the calculation buttons will trigger calculation on these new axis max / min 
+def updateCalibratedAxes():
+    pass
