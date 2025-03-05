@@ -113,5 +113,25 @@ def updateCalibratedControls(inputTrial:str, activeTab:str) -> list:
 
 # take data from relayout when axis is changed and update a dcc.Store with the new axis values
 #then the calculation buttons will trigger calculation on these new axis max / min 
-def updateCalibratedAxes():
-    pass
+@app.callback(Output({'type': 'calibrated-x-range', 'index':MATCH}, 'children'),
+              Input({'type': 'calibrated-nystagmus-plot', 'index':MATCH}, 'relayoutData'),)
+def updateCalibratedXRange(relayoutData: dict) -> tuple:
+    '''
+    Updates the x-axis range based on the user's selection.
+    Parameters:
+        relayoutData (dict): data from the relayout event
+    Returns:
+        tuple: x-axis max and min values
+    '''
+
+    if relayoutData is None:
+        print('No relayout data')
+        return (None, None)
+    
+    print(relayoutData)
+    
+    xaxis = (relayoutData['xaxis.range[0]'], relayoutData['xaxis.range[1]'])
+    
+    print(xaxis)
+    
+    return xaxis

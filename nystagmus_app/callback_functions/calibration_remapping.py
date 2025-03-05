@@ -1,4 +1,4 @@
-from dash import callback, Output, Input, State, MATCH, ALL, callback_context, no_update
+from dash import callback, Output, Input, State, MATCH, ALL, callback_context, no_update, dcc
 from nystagmus_app.app import app
 import nystagmus_app.callback_functions.globals as globals
 from nystagmus_app.utils.regression import applyRecordingLinearRegression
@@ -137,6 +137,9 @@ def calibrateData(buttonClicks, remappingChecks, plus10Values, minus10Values) ->
 
     calibratedRecordingName = f'{relevantRecordingName} - Calibrated'
     globals.calibratedRecordingList.append([calibratedRecordingName, calibratedRecording, calibrationData])
+    
+    xRange = (0, relevantRecordingTrials[0].endTime - relevantRecordingTrials[0].startTime)
+    dcc.Store(id={'type':'calibrated', 'index':relevantRecordingIndex}, data=xRange)
 
     return buttonClicks
 
