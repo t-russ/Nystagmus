@@ -227,11 +227,14 @@ def makeNewCalibratedTab(relevantRecording, calibratedIndex, trialCount):
                             dbc.Col(newGraphControls, width=3, style={"height": "100%"}), 
                             dbc.Col(dcc.Graph(id ={'type': 'calibrated-nystagmus-plot', 'index':calibratedIndex},
                                               style={'width':'140vh', 'height': '80vh'},
-                                              config={'edits': {'shapePosition': True}, 'displaylogo': False}),
+                                              config={
+                                                'responsive': True,
+                                                'displaylogo': False}),
                                     width=9, style={"height": "100%"}),
                             ],
                             align='center',
                             class_name='h-100'),
+                              dcc.Store(id={'type': 'calibrated-x-range', 'index': calibratedIndex}, data=(None, None)),
                         ]
                     )
     return newTab, newTabID

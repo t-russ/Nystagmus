@@ -10,6 +10,7 @@ def serve_layout():
         html.Hr(),
         dcc.Store(id='upload-trigger', data=0),
         dcc.Store(id='calibrate-trigger', data=0),
+        html.Div(id='debug-output'),
         dbc.Row([
         app_components.upload_button,
         ],

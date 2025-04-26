@@ -1,4 +1,4 @@
-from dash import Output, Input, MATCH, State, callback_context, callback
+from dash import callback, Output, Input, State, MATCH, ALL, callback_context, no_update, dcc
 import logging
 from nystagmus_app.app import app
 import nystagmus_app.callback_functions.globals as globals
@@ -56,6 +56,7 @@ def updateCalibratedGraph(inputTrial: str, eyeTracked: list[str], xyTracked: lis
         yRightData = relevantTrial['posYRight']
         fig.add_trace(go.Scatter(x=yRightData.index,y=yRightData,
                                   mode='lines', name='Y Right Eye', line = dict(color='#AB63FA')))
+        
 
     return fig
 
@@ -105,16 +106,18 @@ def updateCalibratedControls(inputTrial:str, activeTab:str) -> list:
         elif key == 'YRight':
             eyesTracked.add('Right')
             xyTracked.add('Y')
+            
+    
 
 
     return list(eyesTracked), list(xyTracked)
 
 
-
 # take data from relayout when axis is changed and update a dcc.Store with the new axis values
 #then the calculation buttons will trigger calculation on these new axis max / min 
-@app.callback(Output({'type': 'calibrated-x-range', 'index':MATCH}, 'children'),
-              Input({'type': 'calibrated-nystagmus-plot', 'index':MATCH}, 'relayoutData'),)
+@app.callback(Output({'type': 'calibrated-x-range', 'index': MATCH}, 'children'),
+              Input({'type': 'calibrated-nystagmus-plot', 'index': MATCH}, 'relayoutData'),
+              prevent_initial_call=True)
 def updateCalibratedXRange(relayoutData: dict) -> tuple:
     '''
     Updates the x-axis range based on the user's selection.
@@ -124,14 +127,13 @@ def updateCalibratedXRange(relayoutData: dict) -> tuple:
         tuple: x-axis max and min values
     '''
 
-    if relayoutData is None:
-        print('No relayout data')
-        return (None, None)
+    if 'xaxis.range[0]' in relayoutData or 'xaxis.range[1]' in relayoutData:
+        xaxis = (relayoutData['xaxis.range[0]'], relayoutData['xaxis.range[1]'])
+        
+        print(f"X axis range updated: {xaxis}")
     
-    print(relayoutData)
+        return xaxis
     
-    xaxis = (relayoutData['xaxis.range[0]'], relayoutData['xaxis.range[1]'])
-    
-    print(xaxis)
-    
-    return xaxis
+    return (None, None)
+
+# [{'xaxis.range[0]': 4968.506137865911, 'xaxis.range[1]': 23123.414542020775, 'yaxis.range[0]': -4526.485985985986, 'yaxis.range[1]': -1495.7452452452453}]
