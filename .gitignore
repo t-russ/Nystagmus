@@ -166,3 +166,5 @@ cython_debug/
 old_files/
 # conda
 .conda/
+
+EDF_data/

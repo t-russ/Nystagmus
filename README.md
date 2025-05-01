@@ -1,1 +1,1 @@
-# Nystagmus
+# Nystagmus Analyser
