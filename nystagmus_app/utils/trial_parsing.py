@@ -3,7 +3,7 @@ import numpy as np
 import logging
 
 #setup logging
-logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
+logging.basicConfig(filename='std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
 
 #class to parse EDF file data into trials
@@ -64,7 +64,7 @@ class EDFTrialParser:
                 newIndexFilter = self._indexFilter(EDFindex, startBufferIndex, endBufferIndex)
                 newHeaderData = self.EDFfileData[EDFindex][newIndexFilter]
                 trialData.append(newHeaderData)
-            logger.debug(f"Extracted Data for EDF Buffer Indexes: {startBufferIndex} to {endBufferIndex}")
+            logger.debug(f"Extracted Data from EDF Buffer Indexes: {startBufferIndex} to {endBufferIndex}")
             return trialData
         
         except Exception as e:

@@ -4,7 +4,7 @@ from nystagmus_app.app import app
 import nystagmus_app.callback_functions.globals as globals
 import plotly.graph_objects as go
 
-logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
+logging.basicConfig(filename='std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
 
 @app.callback(Output({'type': 'calibrated-nystagmus-plot', 'index':MATCH}, 'figure'),

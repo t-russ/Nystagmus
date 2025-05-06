@@ -5,7 +5,7 @@ from nystagmus_app.app import app
 import nystagmus_app.callback_functions.globals as globals
 from nystagmus_app.callback_functions.calibration_remapping import updateRemapLine
 
-logging.basicConfig(filename='logs\\std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
+logging.basicConfig(filename='std.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 logger = logging.getLogger(__name__)
 
 
