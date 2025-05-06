@@ -169,3 +169,4 @@ old_files/
 .conda/
 poetry.lock
 EDF_data/
+temp/
