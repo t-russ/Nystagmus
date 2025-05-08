@@ -1,22 +1,28 @@
-[tool.poetry]
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
 name = "nystagmus_analyser"
 version = "0.1.0"
 description = "A tool for calibrating and analyzing nystagmus data."
-authors = ["Tom Russell <thomas.a.russell@outlook.com>"]
+authors = [
+    { name = "Tom Russell", email = "thomas.a.russell@outlook.com" }
+]
 readme = "README.md"
-license = "MIT"
-packages = [{ include = "nystagmus_app" }]
+license = "MIT" 
+requires-python = ">=3.10"
+dependencies = [
+    "dash==2.17.1",
+    "dash-bootstrap-components==1.6.0",
+    "numpy==2.1.0",
+    "pandas==2.2.2",
+    "plotly==5.23.0",
+    "ipywidgets==8.1.7",
+]
 
+[project.scripts]
+nystagmus = "nystagmus_app.__main__:main"
 
-[tool.poetry.dependencies]
-python = ">=3.10,<4.0"
-dash = "2.17.1"
-dash_bootstrap_components = "1.6.0"
-numpy = "2.1.0"
-pandas = "2.2.2"
-plotly = "5.23.0"
-ipywidgets = "8.1.7"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools.packages.find]
+include = ["nystagmus_app"]

@@ -167,6 +167,5 @@ cython_debug/
 old_files/
 # conda
 .conda/
-poetry.lock
 EDF_data/
 temp/
